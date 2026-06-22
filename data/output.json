@@ -1,0 +1,1443 @@
+{
+    "mathcomp_school.exercise7_solutions.pinvmx_on_key": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 14,
+            "character": 0
+        },
+        "statement": "Lemma pinvmx_on_key : unit.",
+        "proof": " Proof. exact: tt. Qed."
+    },
+    "mathcomp_school.exercise7_solutions.pinvmx_on_sub": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 19,
+            "character": 0
+        },
+        "statement": "Lemma pinvmx_on_sub (F : fieldType) (m n : nat) (S : 'M_(m))\n   (A : 'M[F]_(m, n)) : (pinvmx_on S A <= S)%MS.",
+        "proof": "\nProof.\nrewrite [pinvmx_on _ _]unlock.\nby rewrite (submx_trans (proj_mx_sub _ _ _)) ?genmxE.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.mulmxKpV_on": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 26,
+            "character": 0
+        },
+        "statement": "Lemma mulmxKpV_on (F : fieldType) (m1 m2 n : nat) (S : 'M_(m2))\n  (A : 'M[F]_(m1, n)) (B : 'M_(m2, n)) :\n  (S :&: kermx B)%MS = 0 ->\n  (S + kermx B == 1%:M)%MS ->\n  (A <= B)%MS -> A *m pinvmx_on S B *m B = A.",
+        "proof": "\nProof.\nmove=> SIkB0 SDkB1 subAB; rewrite [pinvmx_on _ _]unlock.\nrewrite -[RHS](mulmxKpV subAB).\nsymmetry.\napply: subr0_eq.\nrewrite -mulmxBl -mulmxBr.\napply/sub_kermxP.\napply: mulmx_sub.\nrewrite proj_mx_compl_sub.\nreflexivity.\nby rewrite (eqmxP SDkB1) submx1.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.S_ku_direct": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 59,
+            "character": 0
+        },
+        "statement": "Fact S_ku_direct : (S :&: kermx u)%MS = 0.",
+        "proof": "\nProof.\napply/eqmx0P; rewrite !(cap_eqmx (eqmx_refl _) eq_keru_imu).\nby rewrite !S_u_direct submx_refl.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.S_ku_eq1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 66,
+            "character": 0
+        },
+        "statement": "Fact S_ku_eq1 : (S + kermx u == 1)%MS.",
+        "proof": "\nProof. by rewrite !(adds_eqmx (eqmx_refl _) eq_keru_imu) S_u_eq1. Qed."
+    },
+    "mathcomp_school.exercise7_solutions.wS": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 79,
+            "character": 0
+        },
+        "statement": "Lemma wS x : (x *m w <= S)%MS.",
+        "proof": "\nProof.\nunlock w.\nby rewrite proj_mx_sub.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.vS": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 85,
+            "character": 0
+        },
+        "statement": "Lemma vS x : (x *m v <= S)%MS.",
+        "proof": "\nProof.\nunlock v.\n by rewrite mulmxA mulmx_sub ?pinvmx_on_sub.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.w_id": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 91,
+            "character": 0
+        },
+        "statement": "Lemma w_id x : (x <= S)%MS -> x *m w = x.",
+        "proof": "\nProof.\nunlock w => xS.\nby rewrite proj_mx_id ?S_u_direct.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.Su_rect": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 97,
+            "character": 0
+        },
+        "statement": "Lemma Su_rect x : x = x *m w + (x *m v) *m u.",
+        "proof": "\nProof.\nunlock v w.\nrewrite [x *m (_ *_)]mulmxA mulmxKpV_on ?proj_mx_sub//.\nby rewrite add_proj_mx // (eqmxP S_u_eq1) submx1.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.Su_dec_eq0": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 107,
+            "character": 0
+        },
+        "statement": "Lemma Su_dec_eq0 y z : (y <= S)%MS -> (z <= S)%MS ->\n  (y + z *m u == 0) = (y == 0) && (z == 0).",
+        "proof": "\nProof.\nmove=> yS zS; apply/idP/idP; last first.\n  by move=> /andP[/eqP -> /eqP ->]; rewrite add0r mul0mx.\nrewrite addr_eq0 -mulNmx => /eqP eq_y_Nzu.\nhave : (y <= S :&: u)%MS by rewrite sub_capmx yS eq_y_Nzu submxMl.\nrewrite S_u_direct // submx0 => /eqP y_eq0.\nmove/eqP: eq_y_Nzu; rewrite y_eq0 eq_sym mulNmx oppr_eq0 eqxx /= => /eqP.\nmove=> /sub_kermxP; rewrite eq_keru_imu => z_keru.\nhave : (z <= S :&: u)%MS by rewrite sub_capmx zS.\nby rewrite S_u_direct // submx0.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.Su_dec_uniq": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 121,
+            "character": 0
+        },
+        "statement": "Lemma Su_dec_uniq y y' z z' : (y <= S)%MS -> (z <= S)%MS ->\n                              (y' <= S)%MS -> (z' <= S)%MS ->\n  (y + z *m u == y' + z' *m u) = (y == y') && (z == z').",
+        "proof": "\nProof.\nmove=> yS zS y'S z'S; rewrite -subr_eq0 opprD addrACA -mulmxBl.\nby rewrite Su_dec_eq0 ?addmx_sub ?eqmx_opp // !subr_eq0.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.u2_eq0": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 131,
+            "character": 0
+        },
+        "statement": "Lemma u2_eq0 : u *m u = 0.",
+        "proof": "\nProof. by apply/sub_kermxP; rewrite eq_keru_imu. Qed."
+    },
+    "mathcomp_school.exercise7_solutions.u2K": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 134,
+            "character": 0
+        },
+        "statement": "Lemma u2K m (a : 'M_(m,n)) : a *m u *m u = 0.",
+        "proof": "\nProof. by rewrite -mulmxA u2_eq0 mulmx0. Qed."
+    },
+    "mathcomp_school.exercise7_solutions.uv": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 137,
+            "character": 0
+        },
+        "statement": "Lemma uv x : (x <= S)%MS -> (x *m u) *m v = x.",
+        "proof": "\nProof.\nmove=> xS; have /eqP := Su_rect (x *m u).\nrewrite -[X in X == _]add0r Su_dec_uniq ?sub0mx ?vS ?wS //.\nby move=> /andP [_ /eqP <-].\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.uw": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 144,
+            "character": 0
+        },
+        "statement": "Lemma uw x : (x <= S)%MS -> (x *m u) *m w = 0.",
+        "proof": "\nProof.\nmove=> xS; have /eqP := Su_rect (x *m u).\nrewrite -[X in X == _]add0r Su_dec_uniq ?sub0mx ?vS ?wS //.\nby move=> /andP [/eqP <-].\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.add_uv_vu": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 153,
+            "character": 0
+        },
+        "statement": "Lemma add_uv_vu : v *m u + u *m v = 1.",
+        "proof": "\nProof.\napply/row_matrixP => i; rewrite !rowE; set x := delta_mx _ _.\nrewrite mulmx1 mulmxDr !mulmxA {2}[x]Su_rect mulmxDl u2K addr0.\nby rewrite uv ?wS // addrC -Su_rect.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.add_wu_uw": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 160,
+            "character": 0
+        },
+        "statement": "Lemma add_wu_uw : w *m u + u *m w = u.",
+        "proof": "\nProof.\napply/row_matrixP => i; rewrite !rowE; set x := delta_mx _ _.\nrewrite mulmxDr !mulmxA {2}[x]Su_rect mulmxDl u2K addr0 uw ?wS // addr0.\nby have /(canLR (addrK _)) <- := Su_rect x; rewrite mulmxBl u2K subr0.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.u20_eq_u_kermx": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 176,
+            "character": 0
+        },
+        "statement": "Lemma u20_eq_u_kermx v : u ^+ 2 = 0 -> v *m u + u *m v = 1 -> (u == kermx u)%MS.",
+        "proof": "\nProof.\nmove=> u20 vuDuv_eq1; apply/andP; split; first by apply/sub_kermxP.\napply/rV_subP => x /sub_kermxP xu_eq0.\nhave /(congr1 (fun w => x *m w)) := vuDuv_eq1; rewrite mulmx1 => <-.\nby rewrite mulmxDr !mulmxA xu_eq0 mul0mx addr0 mulmx_sub.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.u_neq0": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 195,
+            "character": 0
+        },
+        "statement": "Lemma u_neq0 : u != 0.",
+        "proof": "\nby apply/negP => /eqP /matrixP /(_ 2%:R 1) /eqP; rewrite !mxE !eqxx oner_eq0.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.wuDuw_eq_u": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 199,
+            "character": 0
+        },
+        "statement": "Lemma wuDuw_eq_u : w *m u + u *m w = u.",
+        "proof": "\nProof.\nrewrite -scalemxAl -scalemxAr mul1mx mulmx1 -scalerDl.\nrewrite -mulr2n.\nrewrite -(mulr_natr (2^-1) 2).\nrewrite mulrC.\nby rewrite divff ?scale1r ?natf_neq0_pchar.\nQed."
+    },
+    "mathcomp_school.exercise7_solutions.neq_u_kermxu": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise7_solutions.v",
+        "position": {
+            "line": 208,
+            "character": 0
+        },
+        "statement": "Lemma neq_u_kermxu : (u != kermx u)%MS.",
+        "proof": "\nProof.\nsuff: \\rank u != \\rank (kermx u) by apply: contraNneq=> <-.\nby rewrite mxrank_ker; have := rank_leq_row u; case: (\\rank _) => [|[|[]]].\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.MyInj.injectiveP": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 57,
+            "character": 0
+        },
+        "statement": "Lemma injectiveP (aT : finType) (rT : eqType) (f : aT -> rT) :\n  reflect (injective f) (injectiveb f).",
+        "proof": "\nProof.\napply: (iffP forallP).\n  move=> Ibf.\n  move=> x.\n  move=> y.\n  move=> Efxy.\n  have {Ibf}:= Ibf x.\n  move=>/forallP Ibf'.\n  have {Ibf'} := Ibf' y.\n  move=>/implyP.\n  rewrite Efxy.\n  rewrite eqxx.\n  move=>Ibf''.\n  have{Ibf''} := Ibf'' isT.\n  move/eqP.\n  by [].\nmove=> If x.\napply/forallP=> y.\napply/implyP=> /eqP Efxfy.\napply/eqP.\napply: If.\nby [].\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.neg_offset_ord_proof": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 86,
+            "character": 0
+        },
+        "statement": "Lemma neg_offset_ord_proof n (i : 'I_n) (p : nat) : i - p < n.",
+        "proof": "\nProof.\nhave : i < n.\n  apply: ltn_ord.\napply: leq_ltn_trans.\nby apply: leq_subr.\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.gauss_ex_p1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 102,
+            "character": 0
+        },
+        "statement": "Lemma gauss_ex_p1 : forall n, (\\sum_(i < n) i).*2 = n * n.-1.",
+        "proof": "\nProof.\nelim=> [|n IH].\n  rewrite big_ord0.\n  by [].\nrewrite big_ord_recr /=.\nrewrite doubleD.\nrewrite {}IH.\ncase: n => [| n /=].\n  by [].\nrewrite -muln2.\nrewrite -mulnDr.\nrewrite addn2.\nrewrite mulnC.\nby [].\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.gauss_ex_p2": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 119,
+            "character": 0
+        },
+        "statement": "Lemma gauss_ex_p2 : forall n, (\\sum_(i < n) i).*2 = n * n.-1.",
+        "proof": "\nProof.\ncase=> [|n/=].\n  by rewrite big_ord0.\nrewrite -addnn.\nhave Hf i : n - i < n.+1.\n  rewrite ltnS.\n  by apply: leq_subr.\npose f (i : 'I_n.+1) := neg_offset_ord (@ord_max n) i.\nhave f_inj : injective f.\n  move=> x y.\n  rewrite /f /=.\n  move=>/val_eqP/eqP /= Efxfy.\n  apply/val_eqP => /=.\n  have -> : \\val x = n - (n - x).\n    rewrite subKn.\n      by [].\n    rewrite -ltnS.\n    by [].\n  rewrite Efxfy.\n  rewrite subKn.\n  rewrite eqxx.\n  by [].\nrewrite -ltnS.\nby [].\nrewrite {1}(reindex_inj f_inj) /=.\nrewrite -big_split /=.\nhave ext_eq : forall i : 'I_n.+1, true -> n - i + i = n.\n  move=> i _.\n  rewrite subnK.\n    by [].\n  rewrite -ltnS.\n  by [].\nrewrite (eq_bigr (fun _ => n) ext_eq).\nrewrite sum_nat_const.\nrewrite card_ord.\nby[].\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.gauss_ex_p3": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 158,
+            "character": 0
+        },
+        "statement": "Lemma gauss_ex_p3 : forall n, (\\sum_(i < n) i).*2 = n * n.-1.",
+        "proof": "\nProof.\ncase=> [|n/=]; first by rewrite big_ord0.\nrewrite -addnn {1}(reindex_inj rev_ord_inj) -big_split /=.\nrewrite -[X in _ = X * _]card_ord -sum_nat_const.\nby apply: eq_bigr => i _; rewrite subSS subnK // -ltnS.\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.leq_sumL": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 186,
+            "character": 0
+        },
+        "statement": "Lemma leq_sumL n (p : parking n) i : sumL p i < n.+1.",
+        "proof": "\nProof.\n\nhave {2}<-: \\sum_(i < n) 1 = n by rewrite -[X in _ = X]card_ord sum1_card.\nby apply: leq_sum => k; case: (p _ _).\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.leq_sumC": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 193,
+            "character": 0
+        },
+        "statement": "Lemma leq_sumC n (p : parking n) j : sumC p j < n.+1.",
+        "proof": "\nProof.\nhave {2}<-: \\sum_(i < n) 1 = n by rewrite -[X in _ = X]card_ord sum1_card.\nby apply: leq_sum => k; case: (p _ _).\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.inl_inj": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 199,
+            "character": 0
+        },
+        "statement": "Lemma inl_inj {A B} : injective (@inl A B).",
+        "proof": " Proof. by move=> x y []. Qed."
+    },
+    "mathcomp_school.exercise3_solutions.inr_inj": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 200,
+            "character": 0
+        },
+        "statement": "Lemma inr_inj {A B} : injective (@inr A B).",
+        "proof": " Proof. by move=> x y []. Qed."
+    },
+    "mathcomp_school.exercise3_solutions.result": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 202,
+            "character": 0
+        },
+        "statement": "Lemma result n (p : parking n) : 0 < n ->\n  exists i, exists j,\n   [\\/  (i != j) /\\ (sumL p i = sumL p j),\n        (i != j) /\\ (sumC p i = sumC p j) | sumL p i = sumC p j].",
+        "proof": "\nProof.\ncase: n p => [//|[|n]] p _ /=.\n  exists ord0, ord0; apply: Or33.\n  by rewrite /sumL /sumC !big_ord_recl !big_ord0.\npose sLC (i : 'I_n.+2 + 'I_n.+2) :=\n  match i with\n  | inl i => Ordinal (leq_sumL p i)\n  | inr i => Ordinal (leq_sumC p i) end.\nhave [sC_inj | /injectivePn /=] := altP (injectiveP sLC).\n  have := max_card (mem (codom sLC)); rewrite card_codom // card_sum !card_ord.\n  by rewrite !addnS !addSn !ltnS -ltn_subRL subnn ltn0.\nmove=> [[i|i] [[j|j] //=]]; [| |move: i j => j i|];\nrewrite ?(inj_eq inj_inl, inj_eq inj_inr) => neq_ij [];\nby exists i, j; do ?[exact: Or31|exact: Or32|exact: Or33].\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.sum_odd1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 225,
+            "character": 0
+        },
+        "statement": "Lemma sum_odd1 : forall n, \\sum_(i < n) (2 * i + 1) = n ^ 2.",
+        "proof": "\nProof.\ncase=> [|n/=]; first by rewrite big_ord0.\nrewrite big_split -big_distrr /= mul2n gauss_ex_p3 sum_nat_const.\nby rewrite card_ord -mulnDr addn1 mulnn.\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.sum_exp": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 234,
+            "character": 0
+        },
+        "statement": "Lemma sum_exp : forall x n, x ^ n.+1 - 1 = (x - 1) * \\sum_(i < n.+1) x ^ i.",
+        "proof": "\nProof.\nmove=> x n.\nrewrite mulnBl big_distrr mul1n /=.\nrewrite big_ord_recr [X in _ = _ - X]big_ord_recl /=.\nrewrite [X in _ = _ - (_ + X)](eq_bigr (fun i : 'I_n =>  x * x ^ i))\n      => [|i _]; last by rewrite -expnS.\nrewrite [X in _ = X - _]addnC [X in _ = _ - X]addnC subnDA addnK.\nby rewrite expnS expn0.\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.bound_square": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 249,
+            "character": 0
+        },
+        "statement": "Lemma bound_square : forall n, \\sum_(i < n) i ^ 2 <= n ^ 3.",
+        "proof": "\nProof.\nmove=> n.\nrewrite expnS -[X in _ <= X * _]card_ord -sum_nat_const /=.\nelim/big_ind2: _ => // [* |i]; first exact: leq_add.\nby rewrite leq_exp2r // ltnW.\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.sum_prefix_0": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 259,
+            "character": 0
+        },
+        "statement": "Lemma sum_prefix_0 (f : nat -> nat) n m : n <= m ->\n  (forall k, k < n -> f k = 0) ->\n  \\sum_(0 <= i < m) f i = \\sum_(n <= i < m) f i.",
+        "proof": "\nProof.\npose H := big_cat_nat.\nmove => nm f0; rewrite (big_cat_nat (leq0n n) nm) /=.\nrewrite big_nat_cond big_mkcondl big1 ?add0n //.\nmove => i _; case cnd : (0 <= i < n) => //.\napply: f0.\nby move/andP: cnd => [_ it].\nQed."
+    },
+    "mathcomp_school.exercise3_solutions.ex_op2": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise3_solutions.v",
+        "position": {
+            "line": 289,
+            "character": 0
+        },
+        "statement": "Lemma ex_op2 : \\big[op2/0]_(i < 3) i = 3.",
+        "proof": "\nProof.\nby rewrite !big_ord_recr big_ord0 /= !op2add.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.deltaS": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 21,
+            "character": 0
+        },
+        "statement": "Lemma deltaS (n : nat) : delta n.+1 = delta n + n.+1.",
+        "proof": "\nProof.\nrewrite /delta; lia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.leq_delta": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 26,
+            "character": 0
+        },
+        "statement": "Lemma leq_delta (m n : nat) : m <= n -> delta m <= delta n.",
+        "proof": "\nProof.\nmove=> lemn; apply: half_leq; nia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.delta_square": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 33,
+            "character": 0
+        },
+        "statement": "Lemma delta_square (n : nat) : (8 * delta n).+1 = n.*2.+1 ^ 2.",
+        "proof": "\nProof.\nelim: n => // n IHn; rewrite deltaS mulnDr -addSn IHn; lia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.gauss_ex_nat1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 38,
+            "character": 0
+        },
+        "statement": "Lemma gauss_ex_nat1 (n : nat) : (\\sum_(i < n) i).*2 = n * n.-1.",
+        "proof": "\nProof.\nelim: n => [|n IH]; first by rewrite big_ord0.\nby rewrite big_ord_recr /= doubleD {}IH; nia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.gauss_ex_nat2": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 44,
+            "character": 0
+        },
+        "statement": "Lemma gauss_ex_nat2 (n : nat) : \\sum_(i < n) i = (n * n.-1)./2.",
+        "proof": "\nProof.\nelim: n => [|n IH]; first by rewrite big_ord0.\nrewrite big_ord_recr /= {}IH; nia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.gauss_ex_int1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 50,
+            "character": 0
+        },
+        "statement": "Lemma gauss_ex_int1 (n : nat) (m : int) :\n  ((\\sum_(i < n) (m + i%:R)) * 2 = (m * 2 + n%:R - 1) * n%:R)%R.",
+        "proof": "\nProof.\nelim: n => [|n IH]; first by rewrite big_ord0 mulr0.\nrewrite big_ord_recr /= mulrDl {}IH -natr1; lia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.sum_squares_p1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 57,
+            "character": 0
+        },
+        "statement": "Lemma sum_squares_p1 (n : nat) :\n  (\\sum_(i < n) i ^ 2) * 6 = n.-1 * n * (n * 2).-1.",
+        "proof": "\nProof.\nelim: n => [|n IHn]; first by rewrite big_ord0.\nby rewrite mulSn add2n /= big_ord_recr /= mulnDl {}IHn; nia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.sum_squares_p2": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 64,
+            "character": 0
+        },
+        "statement": "Lemma sum_squares_p2 (n : nat) :\n  \\sum_(i < n) i ^ 2 = (n.-1 * n * (n * 2).-1) %/ 6.",
+        "proof": "\nProof.\nelim: n => [|n IHn]; first by rewrite big_ord0.\nrewrite mulSn add2n /= big_ord_recr /= {}IHn; nia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.sum_cubes_p1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 71,
+            "character": 0
+        },
+        "statement": "Lemma sum_cubes_p1 (n : nat) : (\\sum_(i < n) i ^ 3) * 4 = (n * n.-1) ^ 2.",
+        "proof": "\nProof.\nelim: n => [|n IHn]; first by rewrite big_ord0.\nrewrite big_ord_recr /= mulnDl {}IHn; nia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.sum_cubes_p2": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 77,
+            "character": 0
+        },
+        "statement": "Lemma sum_cubes_p2 (n : nat) : \\sum_(i < n) i ^ 3 = ((n * n.-1) %/ 2) ^ 2.",
+        "proof": "\nProof.\nelim: n => [|n IHn]; first by rewrite big_ord0.\nrewrite big_ord_recr /= {}IHn; case: n => //= n.\nrewrite [in RHS]mulnC -[in RHS]add2n mulnDr divnMDl // sqrnD.\nrewrite -addnA addnCA mulnCA [2 * _]mulnC divnK; first lia.\nrewrite dvdn2 oddM; lia.\nQed."
+    },
+    "mathcomp_school.exercise8_solutions.polyeq_p1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise8_solutions.v",
+        "position": {
+            "line": 86,
+            "character": 0
+        },
+        "statement": "Lemma polyeq_p1 (R : comRingType) :\n  (4 *: 'X^3 - 3 *: 'X + 1)%R = (('X + 1) * (2 *: 'X - 1) ^+ 2)%R :> {poly R}.",
+        "proof": "\nProof.\nrewrite -!mul_polyC; ring.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.Cnat_add_eq1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 20,
+            "character": 0
+        },
+        "statement": "Lemma Cnat_add_eq1 : {in @Num.nat algC &, forall x y,\n   (x + y == 1) = ((x == 1) && (y == 0))\n               || ((x == 0) && (y == 1))}.",
+        "proof": "\nProof.\nSearch (reflect _ (_ \\in Num.nat)).\nmove=> x y /natrP [n ->] /natrP [m ->]; rewrite -natrD !pnatr_eq1 ?pnatr_eq0.\nby move: n m => [|[|?]] [|[|?]].\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.ReM": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 29,
+            "character": 0
+        },
+        "statement": "Lemma ReM (x y : algC) :\n  'Re (x * y) = 'Re x * 'Re y - 'Im x * 'Im y.",
+        "proof": "\nProof.\nrewrite {1}[x]algCrect {1}[y]algCrect mulC_rect Re_rect //;\nby rewrite rpredD ?rpredN // rpredM // ?Creal_Re ?Creal_Im.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.ImM": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 36,
+            "character": 0
+        },
+        "statement": "Lemma ImM (x y : algC) :\n  'Im (x * y) = 'Re x * 'Im y + 'Re y * 'Im x.",
+        "proof": "\nProof.\nrewrite {1}[x]algCrect {1}[y]algCrect mulC_rect Im_rect //;\nby rewrite rpredD ?rpredN // rpredM // ?Creal_Re ?Creal_Im.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.Cint_GI": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 52,
+            "character": 0
+        },
+        "statement": "Lemma Cint_GI (x : algC) : x \\in Num.int -> x \\in gaussInteger.",
+        "proof": "\nProof.\nmove=> x_int; rewrite inE (Creal_ReP _ _) ?(Creal_ImP _ _) ?Creal_Cint //.\nby rewrite x_int rpred0 .\nall: apply Rreal_int; assumption.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.GI_subring": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 61,
+            "character": 0
+        },
+        "statement": "Lemma GI_subring : subring_closed gaussInteger.",
+        "proof": "\nProof.\nsplit => [|x y /andP[??] /andP[??]|x y /andP[??] /andP[??]].\n- by rewrite Cint_GI.\n- by rewrite inE !raddfB /= ?rpredB.\nby rewrite inE ReM ImM rpredB ?rpredD // rpredM.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.GIRe": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 78,
+            "character": 0
+        },
+        "statement": "Lemma GIRe (x : GI) : 'Re (val x) \\in Num.int.",
+        "proof": "\nProof. by have /andP [] := algGIP x. Qed."
+    },
+    "mathcomp_school.exercise5_solutions.GIIm": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 80,
+            "character": 0
+        },
+        "statement": "Lemma GIIm (x : GI) : 'Im (val x) \\in Num.int.",
+        "proof": "\nProof. by have /andP [] := algGIP x. Qed."
+    },
+    "mathcomp_school.exercise5_solutions.mulGIr": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 93,
+            "character": 0
+        },
+        "statement": "Fact mulGIr : {in unitGI, left_inverse 1 invGI *%R}.",
+        "proof": "\nProof.\nmove=> x /andP [x_neq0 xVGI]; rewrite /invGI.\nby apply: val_inj; rewrite /= insubdK // mulVr ?unitfE.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.unitGIP": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 99,
+            "character": 0
+        },
+        "statement": "Fact unitGIP (x y : GI) : y * x = 1 -> unitGI x.",
+        "proof": "\nProof.\nrewrite /unitGI => /(congr1 val) /=.\nhave [-> /eqP|x_neq0] := altP (x =P 0); first by rewrite mulr0 eq_sym oner_eq0.\nby move=> /(canRL (mulfK x_neq0)); rewrite mul1r => <- /=.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.unitGI_out": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 106,
+            "character": 0
+        },
+        "statement": "Fact unitGI_out : {in [predC unitGI], invGI =1 id}.",
+        "proof": "\nProof.\nmove=> x.\nrewrite 2!inE /= /unitGI.\nrewrite negb_and negbK => /predU1P [->|/negPf xGIF];\nby apply: val_inj; rewrite /invGI ?val_insubd /= ?xGIF // invr0 if_same.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.conjGIE": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 119,
+            "character": 0
+        },
+        "statement": "Lemma conjGIE (x : algC) : (x^* \\in gaussInteger) = (x \\in gaussInteger).",
+        "proof": "\nProof.\nby rewrite ![_ \\in gaussInteger]inE Re_conj Im_conj/= rpredN.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.conjGI_subproof": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 124,
+            "character": 0
+        },
+        "statement": "Fact conjGI_subproof (x : GI) : (val x)^* \\in gaussInteger.",
+        "proof": "\nProof. by rewrite conjGIE. Qed."
+    },
+    "mathcomp_school.exercise5_solutions.gaussNorm_val": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 130,
+            "character": 0
+        },
+        "statement": "Lemma gaussNorm_val (x : GI) : gaussNorm (val x) = val (x * conjGI x).",
+        "proof": "\nProof. by []. Qed."
+    },
+    "mathcomp_school.exercise5_solutions.gaussNormE": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 135,
+            "character": 0
+        },
+        "statement": "Lemma gaussNormE x : gaussNorm x = `|x| ^+ 2.",
+        "proof": "\nProof. by rewrite normCK. Qed."
+    },
+    "mathcomp_school.exercise5_solutions.gaussNormCnat": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 138,
+            "character": 0
+        },
+        "statement": "Lemma gaussNormCnat (x : GI) : gaussNorm (val x) \\in Num.nat.",
+        "proof": " Search (_ ^+ 2 \\in Num.nat). Search Num.int Num.nat.\nProof. by rewrite /gaussNorm -normCK normC2_Re_Im rpredD // natr_exp_even. Qed."
+    },
+    "mathcomp_school.exercise5_solutions.gaussNorm1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 142,
+            "character": 0
+        },
+        "statement": "Lemma gaussNorm1 : gaussNorm 1 = 1.",
+        "proof": "\nProof. by rewrite /gaussNorm rmorph1 mulr1. Qed."
+    },
+    "mathcomp_school.exercise5_solutions.gaussNormM": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 145,
+            "character": 0
+        },
+        "statement": "Lemma gaussNormM : {morph gaussNorm : x y / x * y}.",
+        "proof": "\nProof. by move=> x y; rewrite /gaussNorm rmorphM mulrACA. Qed."
+    },
+    "mathcomp_school.exercise5_solutions.rev_unitrPr": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 150,
+            "character": 0
+        },
+        "statement": "Lemma rev_unitrPr (R : comUnitRingType) (x y : R) :\n   x * y = 1 -> x \\in GRing.unit.",
+        "proof": "\nProof. by move=> ?; apply/unitrPr; exists y. Qed."
+    },
+    "mathcomp_school.exercise5_solutions.eq_algC": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 154,
+            "character": 0
+        },
+        "statement": "Lemma eq_algC a b :\n  (a == b :> algC) = ('Re a == 'Re b) && ('Im a == 'Im b).",
+        "proof": "\nProof.\nrewrite -subr_eq0 [a - b]algCrect -normr_eq0 -sqrf_eq0.\nrewrite normC2_rect ?paddr_eq0 ?sqr_ge0 -?realEsqr ?Creal_Re ?Creal_Im //.\nby rewrite !sqrf_eq0 !raddfB ?subr_eq0.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.primitive_root_i": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 162,
+            "character": 0
+        },
+        "statement": "Lemma primitive_root_i : 4.-primitive_root ('i : algC).",
+        "proof": "\nProof.\nhave : 'i ^+ 4 = 1 :> algC by rewrite [_ ^+ (2 * 2)]exprM sqrCi -signr_odd expr0.\nmove=> /prim_order_exists [] // [//|[|[|[//|[//|//]]]]] /prim_expr_order.\n  rewrite expr1 => /(congr1 (fun x => 'Im x)) /eqP.\n  by rewrite Im_i (Creal_ImP _ _) ?oner_eq0 ?rpred1.\nby move/eqP; rewrite sqrCi eq_sym -addr_eq0 paddr_eq0 ?ler01 ?oner_eq0.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.primitive_rootX_unity": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 171,
+            "character": 0
+        },
+        "statement": "Lemma primitive_rootX_unity (C: fieldType) n (x : C) :\n  n.-primitive_root x ->\n  n.-unity_root =i [seq x ^+ (val k) | k <- enum 'I_n].",
+        "proof": "\nProof.\nmove=> x_p y; rewrite -topredE /= unity_rootE; apply/idP/idP; last first.\n  by move=> /mapP [k _ ->]; rewrite exprAC [x ^+ _]prim_expr_order // expr1n.\nby move=> /eqP/(prim_rootP x_p)[k ->]; apply/mapP; exists k; rewrite ?mem_enum.\nQed."
+    },
+    "mathcomp_school.exercise5_solutions.unitGI_norm1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise5_solutions.v",
+        "position": {
+            "line": 180,
+            "character": 0
+        },
+        "statement": "Lemma unitGI_norm1 (a : GI) :\n  (a \\in GRing.unit) = (val a \\in 4.-unity_root).",
+        "proof": "\nProof. \ntransitivity (gaussNorm (val a) == 1).\n  apply/idP/idP; last first.\n  Check natr_mul_eq1.\n    by rewrite gaussNorm_val (val_eqE _ (1 : GI)) => /eqP /rev_unitrPr.\n  move=> /unitrPr [b /(congr1 (gaussNorm \\o val)) /=] /eqP.\n by rewrite gaussNormM gaussNorm1 natr_mul_eq1 // => /andP [].\nrewrite (primitive_rootX_unity primitive_root_i).\nrewrite (map_comp (GRing.exp 'i) val) val_enum_ord /=.\nrewrite /= expr0 expr1 sqrCi exprSr sqrCi mulN1r.\nrewrite !in_cons in_nil ?orbF orbA orbAC !orbA orbAC -!orbA.\nrewrite [val a in LHS]algCrect gaussNormE normC2_rect ?Creal_Re ?Creal_Im //.\nrewrite Cnat_add_eq1 ?natr_exp_even // !sqrf_eq0 !sqrf_eq1.\nrewrite andb_orr andb_orl -!orbA.\nrewrite ?[val _ == _]eq_algC !raddfN /=.\nby rewrite Re_i Im_i ?(Creal_ReP 1 _) ?(Creal_ImP 1 _) ?oppr0.\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.bne0": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 39,
+            "character": 0
+        },
+        "statement": "Lemma bne0: b != 0.",
+        "proof": "\nProof. by rewrite intr_eq0. Qed."
+    },
+    "mathcomp_school.exercise6_solutions.P1_size": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 42,
+            "character": 0
+        },
+        "statement": "Lemma P1_size: size (a%:P -  b*:'X) = 2%N.",
+        "proof": "\nProof.\nhave hs:  size (- (b *: 'X)) = 2%N.\n  by rewrite size_opp size_scale ?bne0 // size_polyX.\nby rewrite  addrC size_addl hs ?size_polyC //;  case:(a!= 0).\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.P1_lead_coef": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 50,
+            "character": 0
+        },
+        "statement": "Lemma P1_lead_coef: lead_coef (a%:P -  b*:'X) = -b.",
+        "proof": "\nProof.\nrewrite addrC lead_coefDl.\n  by rewrite lead_coefN lead_coefZ lead_coefX mulr1.\nby rewrite size_opp size_scale ?bne0 // size_polyX size_polyC; case:(a!= 0).\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.P_size": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 58,
+            "character": 0
+        },
+        "statement": "Lemma P_size : size ((a%:P -  b*:'X)^+n)  = n.+1.",
+        "proof": "\nelim:n=>[| n0 Hn0]; first by rewrite expr0 size_polyC.\nrewrite exprS size_proper_mul.\n  by rewrite P1_size /= Hn0.\nby rewrite lead_coef_exp P1_lead_coef -exprS expf_neq0 // oppr_eq0 bne0.\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.int_Qint": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 66,
+            "character": 0
+        },
+        "statement": "Lemma int_Qint (z:int) : z%:~R \\is a (@Num.int rat).",
+        "proof": "\nProof. by apply/intr_int; exists z. Qed."
+    },
+    "mathcomp_school.exercise6_solutions.nat_Qint": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 69,
+            "character": 0
+        },
+        "statement": "Lemma nat_Qint (m:nat) : m%:R \\is a (@Num.nat rat).",
+        "proof": "\nProof. by apply/natr_nat; exists m. Qed."
+    },
+    "mathcomp_school.exercise6_solutions.comp_poly_exprn": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 73,
+            "character": 0
+        },
+        "statement": "Lemma comp_poly_exprn: \n   forall (p q:{poly rat}) i, p^+i \\Po q = (p \\Po q) ^+i.",
+        "proof": "\nmove=> p q; elim=>[| i Hi].\n  by rewrite !expr0 comp_polyC.\nby rewrite !exprS comp_polyM Hi.\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.f_small_coef0": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 83,
+            "character": 0
+        },
+        "statement": "Lemma f_small_coef0 i: (i < n)%N -> f`_i = 0.",
+        "proof": "\nProof.\nmove=> iltn;rewrite /f coefZ.\napply/eqP; rewrite mulf_eq0 invr_eq0 pnatr_eq0 eqn0Ngt (fact_gt0 n) /=.\nby rewrite coefXnM iltn.\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.f_int": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 92,
+            "character": 0
+        },
+        "statement": "Lemma f_int i: (n`!)%:R * f`_i \\is a (@Num.int rat).",
+        "proof": "\nProof.\nrewrite /f coefZ mulrA mulfV; last by rewrite pnatr_eq0 -lt0n (fact_gt0 n).\nrewrite mul1r; apply/polyOverP.\nrewrite rpredM ?rpredX ?polyOverX //.\nby rewrite rpredB ?polyOverC ?polyOverZ ?polyOverX // int_Qint.\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.derive_f_0_int": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 101,
+            "character": 0
+        },
+        "statement": "Lemma derive_f_0_int: forall i, f^`(i).[0] \\is a (@Num.int rat).",
+        "proof": "\nProof.\nmove=> i.\nrewrite horner_coef0 coef_derivn addn0 binomial.ffactnn.\ncase:(boolP (i <n)%N).\n  move/f_small_coef0 ->.\n  by rewrite mul0rn // int_Qint.\nrewrite -leqNgt.\nmove/binomial.bin_fact <-.\nrewrite /f coefZ -mulrnAl -mulr_natr mulrC mulnC !natrM !mulrA mulfVK.\nrewrite !rpredM // ; try exact: intr_nat.\n  apply/polyOverP.\n  rewrite rpredM // ?rpredX ?polyOverX //.\n  by rewrite ?rpredB ?polyOverC ?polyOverZ ?polyOverX // int_Qint.\n\nby rewrite pnatr_eq0 eqn0Ngt (fact_gt0 n).\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.F0_int": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 121,
+            "character": 0
+        },
+        "statement": "Lemma F0_int : F.[0] \\is a (@Num.int rat).",
+        "proof": "\nProof.\nrewrite /F horner_sum rpred_sum // =>  i _ ; rewrite !hornerE rpredM //.\n  by rewrite -exprnP rpredX.\nby rewrite derive_f_0_int.\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.pf_sym": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 129,
+            "character": 0
+        },
+        "statement": "Lemma pf_sym:  f \\Po (pi%:P -'X) = f.",
+        "proof": "\nProof.\nrewrite /f comp_polyZ;congr (_ *:_).\nrewrite comp_polyM   !comp_poly_exprn.\nrewrite comp_polyB comp_polyC !comp_polyZ !comp_polyX scalerBr /pi.\nhave h1:    b%:P * (a / b)%:P = a%:P.\n  by rewrite polyCM mulrC -mulrA -polyCM mulVf ?bne0 // mulr1.\nsuff->: (a%:P - (b *: (a / b)%:P - b *: 'X)) = b%:P * 'X.\n  rewrite exprMn mulrA - exprMn [X in _ = X]mulrC.\n  congr (_ *_); congr (_^+_).\n  rewrite mulrC mulrBr; congr (_ -_)=>//.\n  by rewrite mul_polyC.\nby rewrite -!mul_polyC h1 opprB addrA addrC addrA addNr add0r.\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.derivn_fpix": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 146,
+            "character": 0
+        },
+        "statement": "Lemma  derivn_fpix i :\n      (f^`(i)\\Po(pi%:P -'X))= (-1)^+i *: f^`(i).",
+        "proof": "\nProof.\nelim:i ; first by rewrite /= expr0 scale1r pf_sym.\nmove => i Hi.\nset fx := _ \\Po _.\nrewrite derivnS exprS -scalerA -derivZ -Hi deriv_comp !derivE.\nby rewrite mulrBr mulr0 add0r mulr1 -derivnS /fx scaleN1r opprK.\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.FPi_int": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 157,
+            "character": 0
+        },
+        "statement": "Lemma FPi_int : F.[pi] \\is a (@Num.int rat).",
+        "proof": "\nProof.\nrewrite /F horner_sum rpred_sum //.\nmove=> i _ ; rewrite !hornerE rpredM //.\n  by rewrite -exprnP rpredX.\nmove:(derivn_fpix (2*i)).\nrewrite  mulnC exprM sqrr_sign scale1r => <-.\nby rewrite horner_comp !hornerE subrr derive_f_0_int.\nQed."
+    },
+    "mathcomp_school.exercise6_solutions.D2FDF": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise6_solutions.v",
+        "position": {
+            "line": 170,
+            "character": 0
+        },
+        "statement": "Lemma D2FDF : F^`(2) + F = f.",
+        "proof": "\nProof.\nrewrite /F linear_sum /=.\nrewrite (eq_bigr (fun i:'I_n.+1 => (((-1)^i *: f^`(2 * i.+1)%N)))); last first.\n  move=> i _ ;rewrite !derivZ; congr (_ *:_).\n  rewrite -!derivnS;congr (_^`(_)).\n  by rewrite mulnS addnC addn2.\nrewrite [X in _ + X]big_ord_recl muln0 derivn0.\nrewrite -exprnP expr0 scale1r (addrC f) addrA -[X in _ = X]add0r.\ncongr (_ + _).\nrewrite big_ord_recr addrC addrA -big_split big1=>[| i _].\n  rewrite add0r /=; apply/eqP; rewrite scaler_eq0 -derivnS derivn_poly0.\n    by rewrite eqxx orbT.\n  suff ->: (size f) = (n + n.+1)%N by rewrite -plus_n_O leqnSn.\n  rewrite /f size_scale; last first.\n    by rewrite invr_neq0 // pnatr_eq0 -lt0n (fact_gt0 n).\n  rewrite size_monicM ?monicXn //; last by rewrite -size_poly_eq0 P_size.\n  by rewrite  size_polyXn P_size.\nrewrite /bump /= -scalerDl.\napply/eqP;rewrite scaler_eq0 /bump -exprnP add1n exprSr.\nby rewrite mulrN1 addrC subr_eq0 eqxx orTb.\nQed."
+    },
+    "mathcomp_school.exercise1_solutions.orbC": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise1_solutions.v",
+        "position": {
+            "line": 12,
+            "character": 0
+        },
+        "statement": "Lemma orbC p q : p || q = q || p.",
+        "proof": "\n\nProof. by case: p; case: q. Qed."
+    },
+    "mathcomp_school.exercise1_solutions.Peirce": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise1_solutions.v",
+        "position": {
+            "line": 17,
+            "character": 0
+        },
+        "statement": "Lemma Peirce p q : ((p ==> q) ==> p) ==> p.",
+        "proof": "\n\nProof. by case: p; case: q. Qed."
+    },
+    "mathcomp_school.exercise1_solutions.bool_gimmics1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise1_solutions.v",
+        "position": {
+            "line": 21,
+            "character": 0
+        },
+        "statement": "Lemma bool_gimmics1 a : a != a.-1 -> a != 0.",
+        "proof": "\n\nProof.\napply: contra.\nmove => /eqP Ha.\nby rewrite Ha.\nQed."
+    },
+    "mathcomp_school.exercise1_solutions.find_me": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise1_solutions.v",
+        "position": {
+            "line": 30,
+            "character": 0
+        },
+        "statement": "Lemma find_me p q :  ~~ p = q -> p (+) q.",
+        "proof": "\n\nProof.\nmove=> Hq.\nby rewrite -Hq addbN negb_add eqxx.\nQed."
+    },
+    "mathcomp_school.exercise1_solutions.view_gimmics1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise1_solutions.v",
+        "position": {
+            "line": 38,
+            "character": 0
+        },
+        "statement": "Lemma view_gimmics1 p a b : p -> (p ==> (a == b.*2)) -> a./2 = b.",
+        "proof": "\nProof.\nmove=> Hp.\nrewrite Hp.\nmove=> /eqP Hq.\nby rewrite Hq doubleK.\nQed."
+    },
+    "mathcomp_school.exercise1_solutions.bool_gimmics2": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise1_solutions.v",
+        "position": {
+            "line": 48,
+            "character": 0
+        },
+        "statement": "Lemma bool_gimmics2 p q r : ~~ p && (r == q) -> q ==> (p || r).",
+        "proof": "\n\nProof.\nmove=> /andP[Hp Hr].\nmove: Hp.\nmove=> /negbTE Hp.\nrewrite Hp.\nmove: Hr.\nmove=> /eqP Hq.\nrewrite Hq.\nexact: implybb.\nQed."
+    },
+    "mathcomp_school.exercise1_solutions.ltn_neqAle": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise1_solutions.v",
+        "position": {
+            "line": 62,
+            "character": 0
+        },
+        "statement": "Lemma ltn_neqAle m n : (m < n) = (m != n) && (m <= n).",
+        "proof": "\nProof. by rewrite ltnNge leq_eqVlt negb_or -leqNgt eq_sym. Qed."
+    },
+    "mathcomp_school.exercise1_solutions.mem_cat": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise1_solutions.v",
+        "position": {
+            "line": 66,
+            "character": 0
+        },
+        "statement": "Lemma mem_cat (T : eqType) (x : T) s1 s2 :\n  (x \\in s1 ++ s2) = (x \\in s1) || (x \\in s2).",
+        "proof": "\nProof.\n\nelim: s1 => [//|y s1 IHs /=].\nby rewrite !inE /= -orbA -IHs.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.deltaE": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 16,
+            "character": 0
+        },
+        "statement": "Lemma deltaE n : delta n =  (n.+1 * n)./2.",
+        "proof": "\nProof. by []. Qed."
+    },
+    "mathcomp_school.exercise2_solutions.delta1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 19,
+            "character": 0
+        },
+        "statement": "Lemma delta1 : delta 1 = 1.",
+        "proof": "\nProof. by []. Qed."
+    },
+    "mathcomp_school.exercise2_solutions.deltaS": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 26,
+            "character": 0
+        },
+        "statement": "Lemma deltaS n : delta n.+1 = delta n + n.+1.",
+        "proof": "\nProof.\nrewrite !deltaE -addn2 mulnDl mulnC halfD.\nrewrite !oddM andbF add0n mul2n.\nsuff -> : ((n.+1).*2)./2 = n.+1 by [].\nby rewrite -[RHS](half_bit_double n.+1 false).\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.leq_delta": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 36,
+            "character": 0
+        },
+        "statement": "Lemma leq_delta m n : m <= n -> delta m <= delta n.",
+        "proof": "\nProof.\nby move=> H; apply: half_leq; apply: leq_mul.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.delta_square": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 42,
+            "character": 0
+        },
+        "statement": "Lemma delta_square n : (8 * delta n).+1 = n.*2.+1 ^ 2.",
+        "proof": "\nProof.\nelim: n => // n IH.\nrewrite deltaS mulnDr -addSn IH.\nrewrite doubleS -addn1 -addnS -addSn addn1.\nrewrite sqrnD -addnA /=.\ncongr (_ + _).\nrewrite mulnS.\nrewrite [_ * 2]mulSn mulnDr addnA.\ncongr (_ + _).\nby rewrite mulnCA -muln2 -!mulnA mulnC.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.trootE": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 60,
+            "character": 0
+        },
+        "statement": "Lemma trootE n :\n  troot n = (find (fun x => n < delta x) (iota 0 n.+2)).-1.",
+        "proof": "\nProof. by []. Qed."
+    },
+    "mathcomp_school.exercise2_solutions.troot_gt0": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 66,
+            "character": 0
+        },
+        "statement": "Lemma troot_gt0 n : 0 < n -> 0 < troot n.",
+        "proof": "\nProof.\nby case: n.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.leq_delta_root": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 72,
+            "character": 0
+        },
+        "statement": "Lemma leq_delta_root m : delta (troot m) <= m.",
+        "proof": "\nProof.\nrewrite trootE leqNgt.\nset l := iota _ _; set f := (fun _ => _).\ncase E : (find f l).-1 => [|n] //.\nhave  /(before_find 0) : \n   (find f l).-1 < find f l by rewrite prednK // E.\nrewrite E  nth_iota // /f => [->//|].\nrewrite -[m.+2](size_iota 0) -E prednK; first by apply: find_size.\nby case: find E.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.ltn_delta_root": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 85,
+            "character": 0
+        },
+        "statement": "Lemma ltn_delta_root m : m < delta (troot m).+1.",
+        "proof": "\nProof.\nrewrite /troot leqNgt.\nset l := iota _ _; set f := (fun _ => _).\nhave Hfl : has f l.\n  apply/hasP; exists m.+1; first by rewrite mem_iota leq0n leqnn.\n  rewrite /f /delta -{1}[m.+1](half_bit_double _ false).\n  by apply/half_leq; rewrite add0n -mul2n leq_mul2r orbT.\nhave := nth_find 0 Hfl; rewrite {1}/f.\ncase E : _.-1 => [|n] //.\n  case: find E => // [] [|n] //.\n  by rewrite nth_iota //=; case: (m).\nrewrite nth_iota.\n  by rewrite -E prednK // ltnNge ltnS.\nby rewrite -(size_iota 0 m.+2) -has_find.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.leq_root_delta": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 102,
+            "character": 0
+        },
+        "statement": "Lemma leq_root_delta m n : (n <= troot m) = (delta n <= m).",
+        "proof": "\nProof.\ncase: leqP => [/leq_delta/leq_trans->//|dmLn].\n  apply: leq_delta_root.\napply/sym_equal/idP/negP.\nrewrite -ltnNge.\nby apply: leq_trans (ltn_delta_root _) (leq_delta dmLn).\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.leq_troot": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 111,
+            "character": 0
+        },
+        "statement": "Lemma leq_troot m n : m <= n -> troot m <= troot n.",
+        "proof": "\nProof.\nby move=> mLn; rewrite leq_root_delta (leq_trans (leq_delta_root _)).\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.troot_delta": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 116,
+            "character": 0
+        },
+        "statement": "Lemma troot_delta m n : (troot m == n) = (delta n <= m < delta n.+1).",
+        "proof": "\nProof.\nby rewrite ltnNge -!leq_root_delta -ltnNge ltnS -eqn_leq eq_sym.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.troot_deltaK": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 121,
+            "character": 0
+        },
+        "statement": "Lemma troot_deltaK n : troot (delta n) = n.",
+        "proof": "\nProof.\nby apply/eqP; rewrite troot_delta leqnn deltaS -addn1 leq_add2l.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.tmodE": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 129,
+            "character": 0
+        },
+        "statement": "Lemma tmodE n : tmod n = n - delta (troot n).",
+        "proof": "\nProof. by []. Qed."
+    },
+    "mathcomp_school.exercise2_solutions.tmod_delta": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 132,
+            "character": 0
+        },
+        "statement": "Lemma tmod_delta n : tmod (delta n) = 0.",
+        "proof": "\nProof.\nby rewrite tmodE troot_deltaK subnn.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.delta_tmod": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 137,
+            "character": 0
+        },
+        "statement": "Lemma delta_tmod n : n = delta (troot n) + tmod n.",
+        "proof": "\nProof.\nby rewrite addnC (subnK (leq_delta_root _)).\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.leq_tmod_troot": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 142,
+            "character": 0
+        },
+        "statement": "Lemma leq_tmod_troot n : tmod n <= troot n.",
+        "proof": "\nProof.\nby rewrite leq_subLR -ltnS -addnS -deltaS ltn_delta_root.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.ltn_troot": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 147,
+            "character": 0
+        },
+        "statement": "Lemma ltn_troot m n : troot m < troot n -> m < n.",
+        "proof": "\nProof.\nrewrite leq_root_delta deltaS => /(leq_trans _) -> //.\nby rewrite [X in X < _]delta_tmod ltn_add2l ltnS leq_tmod_troot.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.leq_tmod": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 153,
+            "character": 0
+        },
+        "statement": "Lemma leq_tmod m n : troot m = troot n -> (tmod m <= tmod n) = (m <= n).",
+        "proof": "\nProof.\nmove=> tmEtn.\nrewrite [X in _ = (X <= _)]delta_tmod.\nrewrite [X in _ = (_ <= X)]delta_tmod.\nby rewrite tmEtn leq_add2l.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.leq_troot_mod": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 161,
+            "character": 0
+        },
+        "statement": "Lemma leq_troot_mod m n : \n   m <= n = \n   ((troot m < troot n) || ((troot m == troot n) && (tmod m <= tmod n))).",
+        "proof": "\nProof.\ncase: leqP => [|dmGdn] /= ; last first.\n  apply/idP.\n  apply: (leq_trans (_ : _ <= delta (troot m).+1)).\n    by rewrite ltnW // ltn_delta_root.\n  apply: (leq_trans (_ : _ <= delta (troot n))).\n    by apply: leq_delta.\n  by apply: leq_delta_root.\nrewrite leq_eqVlt => /orP[/eqP dnEdm|dmLdn].\n  rewrite dnEdm eqxx /=.\n  rewrite [X in (X <= _) = _]delta_tmod [X in _ <= X = _]delta_tmod.\n       by rewrite dnEdm leq_add2l.\nrewrite (gtn_eqF dmLdn) /=.\napply/idP/negP.\nrewrite -ltnNge.\napply: (leq_trans (ltn_delta_root _)).\napply: (leq_trans _ (leq_delta_root _)).\nby apply: leq_delta.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.fermatE": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 188,
+            "character": 0
+        },
+        "statement": "Lemma fermatE n : fermat n = (2 ^ (2 ^ n)).+1.",
+        "proof": "\nProof. by []. Qed."
+    },
+    "mathcomp_school.exercise2_solutions.dvd_exp_odd": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 194,
+            "character": 0
+        },
+        "statement": "Lemma dvd_exp_odd a k : \n  0 < a -> odd k -> a.+1 %| (a ^ k).+1.",
+        "proof": "\nProof.\nmove=> aP kO.\nrewrite -[k]odd_double_half {}kO add1n.\nelim: {k}_./2 => [|k IH]; first by apply/dvdnn. \nrewrite doubleS.\nrewrite (_ : (a ^ k.*2.+3).+1 = \n             (a ^ 2 * (a ^ k.*2.+1).+1) - (a ^ 2 - 1)); last first.\n  rewrite mulnSr -expnD !addSn subnBA ?expn_gt0 ?aP //.\n  by rewrite addnAC addnK addn1.\nrewrite dvdn_sub ?dvdn_mull //.\nby rewrite -[X in _ %| _ - X](exp1n 2) subn_sqr addn1 dvdn_mull.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.odd_log_eq0": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 210,
+            "character": 0
+        },
+        "statement": "Lemma odd_log_eq0 n : 0 < n -> logn 2 n = 0 -> odd n.",
+        "proof": "\nProof.\ncase: n => // n _ HL.\nhave : 2 \\notin primes n.+1.\n  rewrite -logn_gt0.\n  by case: (logn 2 n.+1) HL.\nby rewrite mem_primes /= dvdn2 negbK.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.odd_div_log": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 220,
+            "character": 0
+        },
+        "statement": "Lemma odd_div_log n : 0 < n -> odd (n %/ 2 ^ logn 2 n).",
+        "proof": "\nProof.\nmove=> nP.\napply: odd_log_eq0.\n  rewrite divn_gt0 ?expn_gt0 //.\n  apply: dvdn_leq => //.\n  apply: pfactor_dvdnn.\nrewrite logn_div.\n  by rewrite pfactorK // subnn.\nby apply: pfactor_dvdnn.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.prime_2expS": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 233,
+            "character": 0
+        },
+        "statement": "Lemma prime_2expS m : \n  0 < m -> prime (2 ^ m).+1 -> m = 2 ^ logn 2 m.",
+        "proof": "\nProof.\nmove=> mP Hp.\npose a := 2 ^ logn 2 m.\npose b := m %/ a.\nhave : (2 ^ a).+1 %| (2 ^ m).+1. \n  rewrite -(divnK (pfactor_dvdnn 2 m)).\n  rewrite mulnC expnM.\napply: dvd_exp_odd; first by apply: expn_gt0.\n  by apply: odd_div_log.\nhave F : (2 ^ a).+1 != 1.\n  by rewrite eq_sym neq_ltn ltnS expn_gt0.\nmove=> /(prime_nt_dvdP Hp).\nmove=> /(_ F) [] /eqP.\nby rewrite eqn_exp2l // => /eqP{1}<-.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.odd_fermat": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 252,
+            "character": 0
+        },
+        "statement": "Lemma odd_fermat n : odd (fermat n).",
+        "proof": "\nProof.\nby rewrite /= oddX negb_or eq_sym neq_ltn expn_gt0.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.dvdn_exp2m1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 258,
+            "character": 0
+        },
+        "statement": "Lemma dvdn_exp2m1 a k : a.+1 %| (a ^ (2 ^ k.+1)).-1.",
+        "proof": "\nProof.\nelim: k => /= [|k IH].\n  rewrite expn1 -subn1 -[X in _ %| _ - X](exp1n 2).\n  by rewrite subn_sqr addn1 dvdn_mull //.\nrewrite -subn1 -{2}[1](exp1n 2) expnS mulnC expnM subn_sqr.\nby rewrite dvdn_mulr // subn1.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.dvdn_fermat": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 268,
+            "character": 0
+        },
+        "statement": "Lemma dvdn_fermat m n : m < n -> fermat m %| (fermat n).-2.",
+        "proof": "\nProof.\nmove=> mLn.\nrewrite fermatE /= -(subnK mLn) -addSnnS addnC.\nby rewrite expnD expnM dvdn_exp2m1.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.fermat_gt1": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 275,
+            "character": 0
+        },
+        "statement": "Lemma fermat_gt1 n : 1 < fermat n.",
+        "proof": "\nProof.\nby rewrite ltnS expn_gt0.\nQed."
+    },
+    "mathcomp_school.exercise2_solutions.coprime_fermat": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise2_solutions.v",
+        "position": {
+            "line": 281,
+            "character": 0
+        },
+        "statement": "Lemma coprime_fermat m n : m < n -> coprime (fermat m) (fermat n).",
+        "proof": "\nProof.\nmove=> mLn.\nrewrite /coprime -(subnK (fermat_gt1 n)) subn2.\ncase/dvdnP: (dvdn_fermat mLn) => k ->.\nby rewrite gcdnMDl [_ == _]coprimen2 odd_fermat.\nQed."
+    },
+    "mathcomp_school.exercise4_solutions.cat_take_drop": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise4_solutions.v",
+        "position": {
+            "line": 14,
+            "character": 0
+        },
+        "statement": "Lemma cat_take_drop T n (s : seq T) : take n s ++ drop n s = s.",
+        "proof": "\nProof.\nby elim: s n => [|x s IHs] [|n] //=; rewrite IHs.\nQed."
+    },
+    "mathcomp_school.exercise4_solutions.size_take": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise4_solutions.v",
+        "position": {
+            "line": 20,
+            "character": 0
+        },
+        "statement": "Lemma size_take T n (s : seq T) :\n  size (take n s) = if n < size s then n else size s.",
+        "proof": "\nProof.\nhave [le_sn | lt_ns] := leqP (size s) n; first by rewrite take_oversize.\nby rewrite size_takel // ltnW.\nQed."
+    },
+    "mathcomp_school.exercise4_solutions.takel_cat": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise4_solutions.v",
+        "position": {
+            "line": 28,
+            "character": 0
+        },
+        "statement": "Lemma takel_cat T n (s1 s2 : seq T) :\n  n <= size s1 -> take n (s1 ++ s2) = take n s1.",
+        "proof": "\nProof.\nmove=> Hn; rewrite take_cat ltn_neqAle Hn andbT.\nby case: eqP => //= ->; rewrite subnn take0 cats0 take_size.\nQed."
+    },
+    "mathcomp_school.exercise4_solutions.size_rot": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise4_solutions.v",
+        "position": {
+            "line": 36,
+            "character": 0
+        },
+        "statement": "Lemma size_rot T n (s : seq T) : size (rot n s) = size s.",
+        "proof": "\nProof.\nby rewrite -[s in RHS](cat_take_drop n) /rot !size_cat addnC.\nQed."
+    },
+    "mathcomp_school.exercise4_solutions.has_filter": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise4_solutions.v",
+        "position": {
+            "line": 42,
+            "character": 0
+        },
+        "statement": "Lemma has_filter (T : eqType) a (s : seq T)  : has a s = (filter a s != [::]).",
+        "proof": "\nProof.\nby rewrite -size_eq0 size_filter has_count lt0n.\nQed."
+    },
+    "mathcomp_school.exercise4_solutions.filter_all": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise4_solutions.v",
+        "position": {
+            "line": 48,
+            "character": 0
+        },
+        "statement": "Lemma filter_all T a (s : seq T) : all a (filter a s).",
+        "proof": "\nProof. \nby elim: s => //= x s IHs; case: ifP => //= ->. \nQed."
+    },
+    "mathcomp_school.exercise4_solutions.all_filterP": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise4_solutions.v",
+        "position": {
+            "line": 54,
+            "character": 0
+        },
+        "statement": "Lemma all_filterP T a (s : seq T) :\n  reflect (filter a s = s) (all a s).",
+        "proof": "\nProof.\napply: (iffP idP) => [| <-]; last exact: filter_all.\nby elim: s => //= x s IHs /andP[-> Hs]; rewrite IHs.\nQed."
+    },
+    "mathcomp_school.exercise4_solutions.allP": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise4_solutions.v",
+        "position": {
+            "line": 62,
+            "character": 0
+        },
+        "statement": "Lemma allP (T : eqType) (a : pred T) (s : seq T) :\n  reflect (forall x, x \\in s -> a x) (all a s).",
+        "proof": "\nProof.\nelim: s => [|x s IHs] /=; first by exact: ReflectT.\nrewrite andbC; case: IHs => IHs /=.\n  apply: (iffP idP) => [Hx y|].\n    by rewrite inE => /orP[ /eqP-> // | /IHs ].\n  by move=> /(_ x); apply; rewrite inE eqxx.\nby apply: ReflectF=> H; apply: IHs => y Hy; apply H; rewrite inE orbC Hy.\nQed."
+    },
+    "mathcomp_school.exercise4_solutions.maxn_idPl": {
+        "workspace": "mathcomp_school",
+        "filepath_prefix": ".",
+        "filepath": "mathcomp_school/exercise4_solutions.v",
+        "position": {
+            "line": 74,
+            "character": 0
+        },
+        "statement": "Lemma maxn_idPl m n : reflect (maxn m n = m) (m >= n).",
+        "proof": "\nProof. by rewrite -subn_eq0 -(eqn_add2l m) addn0 -maxnE; apply: eqP. Qed."
+    }
+}
