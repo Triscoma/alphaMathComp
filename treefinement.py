@@ -17,7 +17,7 @@ import asyncio
 #parameters
 arity = 3
 beam_size = 2
-iter_max = 32
+iter_max = 4
 nb_examples = 5
 
 max_sample_size = 50
@@ -261,7 +261,7 @@ def make_tree(client, tactic_number_, client_lock) :
 
 def insert(tab, l, i) :
     if l >= len(tab) :
-        tab.extend([[]] * (2*l+1 - len(tab)))
+        tab.extend([[] for _ in range(2*l+1 - len(tab))])
     tab[l].append(i)
 
 
@@ -277,6 +277,9 @@ for i in range(len(position)) :
         k = str(next_tactic[k])
         l += 1
     insert(length, l, i)
+
+for j in range(10) :
+    print(f"difficulty[{j}] : ", length[j])
 
 steps_lock = Lock()
 
