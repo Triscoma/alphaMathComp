@@ -17,21 +17,23 @@ import asyncio
 #parameters
 arity = 3
 beam_size = 2
-iter_max = 4
+iter_max = 0 # à changer
 nb_examples = 5
 
 max_sample_size = 50
-#max_waiting = 20 #for client.goals issues
 MAX_RANGE = 1000000 # pour ne pas itérer sur tout quand on veut juste tester
 
-alpha = 1
-beta = 1
+#alpha = 1
+#beta = 1
+
 def penalty(nb_error, depth) :
-    return alpha * nb_error + beta * depth
+    return nb_error / depth
 
 #model = "openai/gpt-4.1" # gros modèle
-model = "mistralai/mistral-small-2603"
+#model = "mistralai/mistral-small-2603"
 #model = "nvidia/nemotron-3-nano-30b-a3b:free" # modèle de test
+#model = "mistralai/Mistral-7B-Instruct-v0.3"
+model = "deepseek/deepseek-v4-pro"
 
 
 with open('data/output/train_tmp/filepath.json') as filepath_json :
@@ -59,12 +61,17 @@ with open('confidential.json') as confidential_json :
     confidential = json.load(confidential_json)
     API_KEY = confidential["API_KEY"]
 
-
-
+'''
 chatbot = OpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=API_KEY,
     )
+'''
+
+chatbot = OpenAI(
+    base_url="http://127.0.0.1:6379/v1",
+    api_key="EMPTY",
+)
 
 def parse_tactics(text) :
     #print("PARSE_INPUT : ", text)
@@ -141,9 +148,15 @@ def ask_llm(client, client_lock, prev_tactic, proof_st, error, feedback) :
 
     try :
         response = chatbot.responses.create(
-                model=model,
-                input=prompt
-                )
+            model=model,
+            input=prompt,
+            extra_body={
+                "reasoning" : {
+                    "effort" : "high",
+                    "exclude" : True
+                }
+            },
+        )
         #print("ANSWER : ", response.output_text)
         tacs = parse_tactics(response.output_text)
     except Exception as err:
@@ -277,9 +290,6 @@ for i in range(len(position)) :
         k = str(next_tactic[k])
         l += 1
     insert(length, l, i)
-
-for j in range(10) :
-    print(f"difficulty[{j}] : ", length[j])
 
 steps_lock = Lock()
 
