@@ -1,8 +1,12 @@
 confidential.json
 goal2tac
 other
-
+config.yaml
 __pycache__
 .dockerignore
 .lia.cache
 .nia.cache
+apptainer-cache
+extra_code
+results
+*.sif

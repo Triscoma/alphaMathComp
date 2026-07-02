@@ -16,40 +16,45 @@ import asyncio
 
 #parameters
 arity = 3
-beam_size = 2
-iter_max = 8
+beam_size = 4
+iter_max = 2
 nb_examples = 5
 
 max_sample_size = 50
 #max_waiting = 20 #for client.goals issues
 MAX_RANGE = 1000000 # pour ne pas itérer sur tout quand on veut juste tester
 
-alpha = 1
-beta = 1
+#alpha = 1
+#beta = 1
+
 def penalty(nb_error, depth) :
-    return alpha * nb_error + beta * depth
+    return nb_error / depth
 
 #model = "openai/gpt-4.1" # gros modèle
-model = "mistralai/mistral-small-2603"
+#model = "mistralai/mistral-small-2603"
 #model = "nvidia/nemotron-3-nano-30b-a3b:free" # modèle de test
+#model = "mistralai/Mistral-7B-Instruct-v0.3"
+model = "deepseek/deepseek-v4-pro"
 
 
-with open('data/output/train_tmp/filepath.json') as filepath_json :
+prefix = 'data/output/eval_tmp/'
+
+with open(prefix + 'filepath.json') as filepath_json :
     filepath = json.load(filepath_json)
 
-with open('data/output/train_tmp/position.json') as position_json :
+with open(prefix + 'position.json') as position_json :
     position = json.load(position_json)
 
-with open('data/output/train_tmp/tactic.json') as tactic_json :
+with open(prefix + 'tactic.json') as tactic_json :
     tactic = json.load(tactic_json)
 
-with open('data/output/train_tmp/next_tactic.json') as next_tactic_json :
+with open(prefix + 'next_tactic.json') as next_tactic_json :
     next_tactic = json.load(next_tactic_json)
 
-with open('data/output/train_tmp/statement.json') as statement_json :
+with open(prefix + 'statement.json') as statement_json :
     statement = json.load(statement_json)
 
-with open('data/output/train_tmp/theorem.json') as theorem_json :
+with open(prefix + 'theorem.json') as theorem_json :
     theorem = json.load(theorem_json)
 
 with open('data/output.json') as output_json : 
@@ -60,11 +65,17 @@ with open('confidential.json') as confidential_json :
     API_KEY = confidential["API_KEY"]
 
 
-
 chatbot = OpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=API_KEY,
     )
+
+'''
+chatbot = OpenAI(
+    base_url="http://127.0.0.1:6379/v1",
+    api_key="EMPTY",
+)
+'''
 
 def parse_tactics(text) :
     #print("PARSE_INPUT : ", text)
@@ -142,8 +153,14 @@ def ask_llm(client, client_lock, prev_tactic, proof_st, error, feedback) :
     try :
         response = chatbot.responses.create(
                 model=model,
-                input=prompt
-                )
+                input=prompt,
+                extra_body={
+                    "reasoning" : {
+                        "effort" : "high",
+                        "exclude" : True
+                    }
+                },
+            )
         #print("ANSWER : ", response.output_text)
         tacs = parse_tactics(response.output_text)
     except Exception as err:

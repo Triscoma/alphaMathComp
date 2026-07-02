@@ -1,8 +1,6 @@
 From elpi Require Import elpi.
 From HB Require Import structures.
 From mathcomp Require Import all_ssreflect.
-From mathcomp Require Import all_boot.
-From mathcomp Require Import all_order.
 
 
 Set Implicit Arguments.

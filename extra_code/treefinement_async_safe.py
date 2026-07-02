@@ -302,7 +302,7 @@ with Pytanque(mode=PytanqueMode.STDIO) as client:
     for i in range(len(length)) : 
         t_start = time.time()
         nb_trees = min(len(length[i]), MAX_RANGE)
-        l = sample(length[i], nb_trees)
+        l = random.sample(length[i], nb_trees)
         nb_tries = 0
         nb_success = 0
 

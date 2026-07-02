@@ -13,43 +13,61 @@ from threading import Lock
 import time
 import random
 import asyncio
+from pathlib import Path
+import datetime
+
+date = datetime.datetime.now.strftime("%c")
+results_dir = Path("results") / f"{date}"
+results_dir.mkdir(parents=True, exist_ok=True)
 
 #parameters
 arity = 3
 beam_size = 2
-iter_max = 4
+iter_max = 5
 nb_examples = 5
-
 max_sample_size = 50
-#max_waiting = 20 #for client.goals issues
+
 MAX_RANGE = 1000000 # pour ne pas itérer sur tout quand on veut juste tester
 
-alpha = 1
-beta = 1
-def penalty(nb_error, depth) :
-    return alpha * nb_error + beta * depth
+#alpha = 1
+#beta = 1
+
+def penalty(nb_error, depth, consecutive_errors) :
+    return nb_error / depth
+
+'''
+def penalty(nb_error, depth, consecutive_errors) :
+    return consecutive_errors
+'''
+
+#modèles de test : 
+model = "nvidia/nemotron-3-nano-30b-a3b:free"
+#model = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
 
 #model = "openai/gpt-4.1" # gros modèle
-model = "mistralai/mistral-small-2603"
-#model = "nvidia/nemotron-3-nano-30b-a3b:free" # modèle de test
+#model = "mistralai/mistral-small-2603"
+#model = "mistralai/Mistral-7B-Instruct-v0.3"
+#model = "deepseek/deepseek-v4-pro"
+
+prefix = 'data/output/eval_tmp/'
 
 
-with open('data/output/train_tmp/filepath.json') as filepath_json :
+with open(prefix + 'filepath.json') as filepath_json :
     filepath = json.load(filepath_json)
 
-with open('data/output/train_tmp/position.json') as position_json :
+with open(prefix + 'position.json') as position_json :
     position = json.load(position_json)
 
-with open('data/output/train_tmp/tactic.json') as tactic_json :
+with open(prefix + 'tactic.json') as tactic_json :
     tactic = json.load(tactic_json)
 
-with open('data/output/train_tmp/next_tactic.json') as next_tactic_json :
+with open(prefix + 'next_tactic.json') as next_tactic_json :
     next_tactic = json.load(next_tactic_json)
 
-with open('data/output/train_tmp/statement.json') as statement_json :
+with open(prefix + 'statement.json') as statement_json :
     statement = json.load(statement_json)
 
-with open('data/output/train_tmp/theorem.json') as theorem_json :
+with open(prefix + 'theorem.json') as theorem_json :
     theorem = json.load(theorem_json)
 
 with open('data/output.json') as output_json : 
@@ -59,12 +77,17 @@ with open('confidential.json') as confidential_json :
     confidential = json.load(confidential_json)
     API_KEY = confidential["API_KEY"]
 
-
-
 chatbot = OpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=API_KEY,
     )
+
+'''
+chatbot = OpenAI(
+    base_url="http://127.0.0.1:6379/v1",
+    api_key="EMPTY",
+)
+'''
 
 def parse_tactics(text) :
     #print("PARSE_INPUT : ", text)
@@ -141,9 +164,15 @@ def ask_llm(client, client_lock, prev_tactic, proof_st, error, feedback) :
 
     try :
         response = chatbot.responses.create(
-                model=model,
-                input=prompt
-                )
+            model=model,
+            input=prompt,
+            extra_body={
+                "reasoning" : {
+                    "effort" : "high",
+                    "exclude" : True
+                }
+            },
+        )
         #print("ANSWER : ", response.output_text)
         tacs = parse_tactics(response.output_text)
     except Exception as err:
@@ -164,6 +193,7 @@ def make_tree(client, tactic_number_, client_lock) :
     error = [None]
     depth = [0]
     nb_err = [0]
+    nb_cons_err = [0]
     node_feedback = [[]]
 
     file, pos = "./rocq/" + filepath[tactic_number], position[tactic_number]
@@ -206,6 +236,7 @@ def make_tree(client, tactic_number_, client_lock) :
                 error.append(new_error)
                 depth.append(depth[node] + 1)
                 nb_err.append(nb_err[node] + 0 if error[new_node] is None else 1)
+                nb_cons_err.append(0 if error[new_node] is None else 1 + nb_cons_err[node])
                 node_feedback.append(new_feedback)
                 if proof_state[new_node].proof_finished :
                     # Retrieve the correction steps
@@ -232,9 +263,10 @@ def make_tree(client, tactic_number_, client_lock) :
                     return steps
                 else :
                     # la preuve n'est pas finie, donc il faudra explorer ce noeud plus tard
-                    pq.put((penalty(nb_err[new_node], depth[new_node]), new_node))
+                    pq.put((penalty(nb_err[new_node], depth[new_node], nb_cons_err[new_node]), new_node))
                     #with client_lock :
                     #    goals_seen.add(client.goals(proof_state[new_node])[0].pp)
+
         return []
 
 
@@ -253,7 +285,39 @@ def make_tree(client, tactic_number_, client_lock) :
         with ThreadPoolExecutor() as pool:
             for steps in list(pool.map(make_beam, range(len(beam_nodes)))) :
                 if steps != [] :
+                    with it_lock :
+                        Tree = {
+                            "tree" : tree,
+                            "parent" : parent,
+                            "proof_state" : [x.to_json() for x in proof_state],
+                            "tactic_tried" : tactic_tried,
+                            "error" : error,
+                            "depth" : depth,
+                            "nb_err" : nb_err,
+                            "nb_const_err" : nb_cons_err,
+                            "node_feedback" : node_feedback,
+                        }
+                        p = results_dir / f"tactic_{tactic_number_}.json"
+                        with open(p, "w") as f: 
+                            json.dump(Tree, f, indent=2)
                     return steps
+
+
+    with it_lock :
+        Tree = {
+            "tree" : tree,
+            "parent" : parent,
+            "proof_state" : [x.to_json() for x in proof_state],
+            "tactic_tried" : tactic_tried,
+            "error" : error,
+            "depth" : depth,
+            "nb_err" : nb_err,
+            "nb_const_err" : nb_cons_err,
+            "node_feedback" : node_feedback,
+        }
+        p = results_dir / f"tactic_{tactic_number_}.json"
+        with open(p, "w") as f: 
+            json.dump(Tree, f, indent=2)
 
     return []
 
@@ -284,27 +348,27 @@ for i in range(len(length)) :
     t_start = time.time()
     l = length[i]
     nb_trees = min(len(l), MAX_RANGE)
-    nb_tries = 0
+    nb_try = 0
     nb_success = 0
 
     def worker(j) :
-        global nb_tries, nb_success, good_proof_steps
+        global nb_try, nb_success, good_proof_steps
         with Pytanque(mode=PytanqueMode.STDIO) as client :
             client_lock = Lock()
             new_good_steps = make_tree(client, l[j], client_lock)
         with steps_lock :
-            nb_tries += 1
+            nb_try += 1
             if new_good_steps != [] :
                 nb_success += 1
-                print(l[j], f"-- finished(success) --> {nb_success}/{nb_tries}")
+                print(l[j], f"-- finished(success) --> {nb_success}/{nb_try}")
             else :
-                print(l[j], f"-- finished(failure) --> {nb_success}/{nb_tries}")
+                print(l[j], f"-- finished(failure) --> {nb_success}/{nb_try}")
             good_proof_steps += new_good_steps
 
     with ThreadPoolExecutor() as pool: #max_workers=... pour choisir le nb max de threads
         list(pool.map(worker, range(nb_trees)))
 
-    print(f"Score(difficulty = {i+1}) = {nb_success}/{nb_tries}")
+    print(f"Score(difficulty = {i+1}) = {nb_success}/{nb_try}")
     print("TIME : ", time.time() - t_start)
 
 #with open("output_treefinement.dump", 'wb') as f:
