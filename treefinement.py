@@ -278,9 +278,6 @@ for i in range(len(position)) :
         l += 1
     insert(length, l, i)
 
-for j in range(10) :
-    print(f"difficulty[{j}] : ", length[j])
-
 steps_lock = Lock()
 
 for i in range(len(length)) : 
