@@ -51,7 +51,6 @@ model = "nvidia/nemotron-3-nano-30b-a3b:free"
 
 prefix = 'data/output/eval_tmp/'
 
-
 with open(prefix + 'filepath.json') as filepath_json :
     filepath = json.load(filepath_json)
 
