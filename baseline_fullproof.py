@@ -140,7 +140,7 @@ def ask_llm(client, client_lock, proof_st) :
                 input=prompt,
                 extra_body={
                     "reasoning" : {
-                        "effort" : "low",
+                        "effort" : "high",
                         "exclude" : True
                     }
                 },
@@ -179,32 +179,41 @@ def try_solving(client, tactic_number_, client_lock) :
 
 steps_lock = Lock()
 
-l = []
+tactics = []
+nb_try = [0 for i in range(42)]    
+nb_success = [0 for i in range(42)]
+
 t_start = time.time()
-nb_try = 0
-nb_success = 0
 for i in range(len(position)) : 
     k = str(i)
     if (theorem[k] in seen_lemmas):
         continue
     seen_lemmas.add(theorem[k])
-    l.append(i) 
+    l = 0
+    while next_tactic[k] != None :
+        k = str(next_tactic[k])
+        l += 1
+    tactics.append((l, i))
+
 
 with Pytanque(mode=PytanqueMode.STDIO) as client :
     client_lock = Lock()
     def worker(j) :
         global nb_try, nb_success
-        is_solved = try_solving(client, l[j], client_lock)
+        l, i = tactics[j]
+        is_solved = try_solving(client, i, client_lock)
         with steps_lock :
-            nb_try += 1
+            nb_try[l] += 1
             if is_solved :
-                nb_success += 1
-                print(l[j], f"-- finished(success) --> {nb_success}/{nb_try}")
+                nb_success[l] += 1
+                print(i, f"[difficulty = {l+1}] -- finished(success) --> {nb_success[l]}/{nb_try[l]}")
             else :
-                print(l[j], f"-- finished(failure) --> {nb_success}/{nb_try}")
+                print(i, f"[difficulty = {l+1}] -- finished(failure) --> {nb_success[l]}/{nb_try[l]}")
 
     with ThreadPoolExecutor() as pool: #max_workers=... pour choisir le nb max de threads
-        list(pool.map(worker, range(len(l))))
+        list(pool.map(worker, range(len(tactics))))
 
-print(f"SCORE : {nb_success}/{nb_try}")
+for l in range(42):
+    print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}")
+print(f"Score Total : sum(nb_success)/sum(nb_try)")
 print("TIME : ", time.time() - t_start)

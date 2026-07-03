@@ -360,8 +360,8 @@ def worker(j) :
 with ThreadPoolExecutor() as pool: #max_workers=... pour choisir le nb max de threads
     list(pool.map(worker, range(len(tactics))))
 
-for l in range(1, 36):
-    print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}")
+for l in range(42):
+        print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}")
 print(f"Score Total : sum(nb_success)/sum(nb_try)")
 print("TIME : ", time.time() - t_start)
 
