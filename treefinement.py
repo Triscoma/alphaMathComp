@@ -16,6 +16,8 @@ import asyncio
 from pathlib import Path
 import datetime
 
+t_start = time.time()
+
 date = datetime.datetime.now()
 results_dir = Path("results") / f"{date.strftime("%c")}"
 results_dir.mkdir(parents=True, exist_ok=True)
@@ -23,11 +25,11 @@ results_dir.mkdir(parents=True, exist_ok=True)
 #parameters
 arity = 3
 beam_size = 4
-iter_max = 12
-nb_examples = 5
-max_sample_size = 20
+iter_max = 6
+nb_examples = 0
+max_sample_size = 0
 
-MAX_RANGE = 1000000 # pour ne pas itérer sur tout quand on veut juste tester
+MAX_RANGE = 7 # pour ne pas itérer sur tout quand on veut juste tester, mettre à 10000 sinon
 
 #alpha = 1
 #beta = 1
@@ -41,11 +43,11 @@ def penalty(nb_error, depth, consecutive_errors) :
 '''
 
 #modèles de test : 
-model = "nvidia/nemotron-3-nano-30b-a3b:free"
+#model = "nvidia/nemotron-3-nano-30b-a3b:free"
 #model = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
 
 #model = "openai/gpt-4.1" # gros modèle
-#model = "mistralai/mistral-small-2603"
+model = "mistralai/mistral-small-2603"
 #model = "mistralai/Mistral-7B-Instruct-v0.3"
 #model = "deepseek/deepseek-v4-pro"
 #model = "deepseek/deepseek-v4-flash" # pas cher
@@ -291,12 +293,12 @@ def make_tree(client, tactic_number_, client_lock) :
                         Tree = {
                             "tree" : tree,
                             "parent" : parent,
-                            "proof_state" : [x.to_json() for x in proof_state],
+                            "goals" : [[y.to_json() for y in client.goals(x)] for x in proof_state],
                             "tactic_tried" : tactic_tried,
                             "error" : error,
                             "depth" : depth,
                             "nb_err" : nb_err,
-                            "nb_const_err" : nb_cons_err,
+                            "nb_cons_err" : nb_cons_err,
                             "node_feedback" : node_feedback,
                         }
                         p = results_dir / f"tactic_{tactic_number_}.json"
@@ -309,12 +311,12 @@ def make_tree(client, tactic_number_, client_lock) :
         Tree = {
             "tree" : tree,
             "parent" : parent,
-            "proof_state" : [x.to_json() for x in proof_state],
+            "goals" : [[y.to_json() for y in client.goals(x)] for x in proof_state],
             "tactic_tried" : tactic_tried,
             "error" : error,
             "depth" : depth,
             "nb_err" : nb_err,
-            "nb_const_err" : nb_cons_err,
+            "nb_cons_err" : nb_cons_err,
             "node_feedback" : node_feedback,
         }
         p = results_dir / f"tactic_{tactic_number_}.json"
@@ -329,7 +331,8 @@ nb_try = [0 for i in range(42)]
 nb_success = [0 for i in range(42)]
 
 tactics = []
-for i in range(len(position)) :
+N = min(MAX_RANGE, len(position))
+for i in range(N) :
     k = str(i)
     if (theorem[k] in example_lemmas):
         continue
@@ -362,8 +365,19 @@ with ThreadPoolExecutor() as pool: #max_workers=... pour choisir le nb max de th
 
 for l in range(42):
         print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}")
-print(f"Score Total : sum(nb_success)/sum(nb_try)")
-print("TIME : ", time.time() - t_start)
+
+
+p = results_dir / "final_results.json"
+final_results = {
+        "nb_try": nb_try,
+        "nb_success": nb_success,
+        "total_score" : sum(nb_success)/sum(nb_try),
+        "exec_time" : time.time() - t_start,
+    }
+with open(p, "w") as f: 
+    json.dump(final_results, f, indent=2)
+    print(f"Score Total : {sum(nb_success)}/{sum(nb_try)}")
+    print("TIME : ", time.time() - t_start)
 
 #with open("output_treefinement.dump", 'wb') as f:
 #    pickle.dump(good_proof_steps, f)
