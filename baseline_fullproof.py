@@ -154,6 +154,7 @@ def ask_llm(client, client_lock, proof_st) :
     return tacs
 
 def try_solving(client, tactic_number_, client_lock) :
+    proof_len = 0
     print("tactic_number : ", tactic_number_)
     tactic_number = str(tactic_number_)
 
@@ -169,19 +170,21 @@ def try_solving(client, tactic_number_, client_lock) :
             with client_lock :
                 proof_state = client.run(proof_state, "Timeout 10 " + tac)
             print("typechecked")
+            proof_len += 1
         except Exception as err :
             print("DID'NT typechecked")
             continue
 
         if proof_state.proof_finished :
-            return True
-    return False
+            return proof_len
+    return 0
 
 steps_lock = Lock()
 
 tactics = []
 nb_try = [0 for i in range(42)]    
 nb_success = [0 for i in range(42)]
+size = [0 for i in range(42)]
 
 t_start = time.time()
 for i in range(len(position)) : 
@@ -204,7 +207,8 @@ with Pytanque(mode=PytanqueMode.STDIO) as client :
         is_solved = try_solving(client, i, client_lock)
         with steps_lock :
             nb_try[l] += 1
-            if is_solved :
+            if is_solved > 0 :
+                size[l] += is_solved
                 nb_success[l] += 1
                 print(i, f"[difficulty = {l+1}] -- finished(success) --> {nb_success[l]}/{nb_try[l]}")
             else :
@@ -214,6 +218,6 @@ with Pytanque(mode=PytanqueMode.STDIO) as client :
         list(pool.map(worker, range(len(tactics))))
 
 for l in range(42):
-    print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}")
+    print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}, average successful proof length = {0 if nb_success[l] == 0 else size/nb_success[l]}")
 print(f"Score Total : sum(nb_success)/sum(nb_try)")
 print("TIME : ", time.time() - t_start)
