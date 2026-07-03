@@ -219,5 +219,5 @@ with Pytanque(mode=PytanqueMode.STDIO) as client :
 
 for l in range(42):
     print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}, average successful proof length = {0 if nb_success[l] == 0 else size/nb_success[l]}")
-print(f"Score Total : sum(nb_success)/sum(nb_try)")
+print(f"Total Score : {sum(nb_success)}/{sum(nb_try)}")
 print("TIME : ", time.time() - t_start)
