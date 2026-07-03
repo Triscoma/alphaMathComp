@@ -10,3 +10,4 @@ apptainer-cache
 extra_code
 results
 *.sif
+.venv
