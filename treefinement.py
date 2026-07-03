@@ -120,7 +120,7 @@ def init_examples(client) :
         file, pos = "./rocq/" + filepath[tactic_number], position[tactic_number]
         line, char = pos["line"], pos["character"]
         goal = client.goals(client.get_state_at_pos(file, line, char))[0].pp
-        examples.append({"goal" : goal, "tactic tried" : None, "error" : None, "tactic corrected" : tactic[tactic_number]})
+        examples.append({"theorem" : tactic_number, "goal" : goal, "tactic tried" : None, "error" : None, "tactic corrected" : tactic[tactic_number]})
 
 with Pytanque(mode=PytanqueMode.STDIO) as client:
     init_examples(client)
@@ -128,7 +128,7 @@ with Pytanque(mode=PytanqueMode.STDIO) as client:
 good_proof_steps = examples
 
 # renvoie une tactique générée par llm, ainsi que la proof_state et l'éventuelle erreur qui survient
-def ask_llm(client, client_lock, prev_tactic, proof_st, error, feedback) :
+def ask_llm(client, client_lock, tactic_number, prev_tactic, proof_st, error, feedback) :
 
     with client_lock :
         goal = client.goals(proof_st)[0].pp
@@ -141,7 +141,8 @@ def ask_llm(client, client_lock, prev_tactic, proof_st, error, feedback) :
     prompt += "Each of your proposal should end by a point.\n"
 
     prompt += "\n\nTo help you, here are some examples of proof steps in mathcomp for a given goal statement:\n"
-    for ex in random.sample(good_proof_steps, min(max_sample_size, len(good_proof_steps))):
+    filtered_steps = [step for step in good_proof_steps if step["theorem"] != tactic_number]
+    for ex in random.sample(filtered_steps, min(max_sample_size, len(filtered_steps))):
         prompt += "\nGoal : \n" + ex["goal"] + "\n"
         if (ex["error"] is None) :
             prompt += "\nNext tactic : " + ex["tactic corrected"] + "\n"
@@ -211,10 +212,11 @@ def make_tree(client, tactic_number_, client_lock) :
 
     def make_new_branches(node) : 
         ''' Generate arity children to node and returns generated steps if one tactic succeeded'''
+        nonlocal tactic_number
         #tac, new_state, new_error, new_feedback = ask_llm(tactic_tried[node], proof_state[node], error[node], previous_lemmas, node_feedback[node])
         proof_st = proof_state[node]
         new_feedback = node_feedback[node][:40] + proof_st.feedback[:50] #If there was an error, the last feedback is contained in the current proof state. I don't know how to fix it, it's not a major issue anyway
-        tacs = ask_llm(client, client_lock, tactic_tried[node], proof_st, error[node], new_feedback)
+        tacs = ask_llm(client, client_lock, tactic_number, tactic_tried[node], proof_st, error[node], new_feedback)
         #print("TACS :", tacs)
         for tac in tacs :
             try :
@@ -253,7 +255,7 @@ def make_tree(client, tactic_number_, client_lock) :
 
                             with client_lock :
                                 goal = client.goals(proof_state[u])[0].pp
-                            steps.append({"goal" : goal, "tactic tried" : tactic_tried[u], "error" : error[u], "tactic corrected" : tactic_tried[n]})
+                            steps.append({"theorem" : theorem[tactic_number], "goal" : goal, "tactic tried" : tactic_tried[u], "error" : error[u], "tactic corrected" : tactic_tried[n]})
 
                             for v in tree[u] :
                                 if (error[v] != None) :
