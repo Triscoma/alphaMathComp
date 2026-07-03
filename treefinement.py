@@ -16,16 +16,16 @@ import asyncio
 from pathlib import Path
 import datetime
 
-date = datetime.datetime.now.strftime("%c")
-results_dir = Path("results") / f"{date}"
+date = datetime.datetime.now()
+results_dir = Path("results") / f"{date.strftime("%c")}"
 results_dir.mkdir(parents=True, exist_ok=True)
 
 #parameters
 arity = 3
-beam_size = 2
-iter_max = 5
+beam_size = 4
+iter_max = 12
 nb_examples = 5
-max_sample_size = 50
+max_sample_size = 20
 
 MAX_RANGE = 1000000 # pour ne pas itérer sur tout quand on veut juste tester
 
@@ -48,6 +48,7 @@ model = "nvidia/nemotron-3-nano-30b-a3b:free"
 #model = "mistralai/mistral-small-2603"
 #model = "mistralai/Mistral-7B-Instruct-v0.3"
 #model = "deepseek/deepseek-v4-pro"
+#model = "deepseek/deepseek-v4-flash" # pas cher
 
 prefix = 'data/output/eval_tmp/'
 
@@ -269,7 +270,7 @@ def make_tree(client, tactic_number_, client_lock) :
         return []
 
 
-    for it in range(iter_max) :
+    for it in range(int(iter_max / beam_size)) :
         #print("it = ", it)
         beam_nodes = []
         for _ in range(beam_size) :
@@ -322,15 +323,10 @@ def make_tree(client, tactic_number_, client_lock) :
 
 
 
-def insert(tab, l, i) :
-    if l >= len(tab) :
-        tab.extend([[] for _ in range(2*l+1 - len(tab))])
-    tab[l].append(i)
+nb_try = [0 for i in range(42)]    
+nb_success = [0 for i in range(42)]
 
-
-length = [[]] #tactics grouped by solution length
-    
-
+tactics = []
 for i in range(len(position)) :
     k = str(i)
     if (theorem[k] in example_lemmas):
@@ -339,36 +335,33 @@ for i in range(len(position)) :
     while next_tactic[k] != None :
         k = str(next_tactic[k])
         l += 1
-    insert(length, l, i)
+    tactics.append((l, i))
+
+tactics.sort()
 
 steps_lock = Lock()
+def worker(j) :
+    global nb_try, nb_success, good_proof_steps
+    l, i = tactics[j]
+    with Pytanque(mode=PytanqueMode.STDIO) as client :
+        client_lock = Lock()
+        new_good_steps = make_tree(client, i, client_lock)
+    with steps_lock :
+        nb_try[l] += 1
+        if new_good_steps != [] :
+            nb_success[l] += 1
+            print(i, f"[difficulty = {l+1}] -- finished(success) --> {nb_success[l]}/{nb_try[l]}")
+        else :
+            print(i, f"[difficulty = {l+1}] -- finished(failure) --> {nb_success[l]}/{nb_try[l]}")
+        good_proof_steps += new_good_steps
 
-for i in range(len(length)) : 
-    t_start = time.time()
-    l = length[i]
-    nb_trees = min(len(l), MAX_RANGE)
-    nb_try = 0
-    nb_success = 0
+with ThreadPoolExecutor() as pool: #max_workers=... pour choisir le nb max de threads
+    list(pool.map(worker, range(len(tactics))))
 
-    def worker(j) :
-        global nb_try, nb_success, good_proof_steps
-        with Pytanque(mode=PytanqueMode.STDIO) as client :
-            client_lock = Lock()
-            new_good_steps = make_tree(client, l[j], client_lock)
-        with steps_lock :
-            nb_try += 1
-            if new_good_steps != [] :
-                nb_success += 1
-                print(l[j], f"-- finished(success) --> {nb_success}/{nb_try}")
-            else :
-                print(l[j], f"-- finished(failure) --> {nb_success}/{nb_try}")
-            good_proof_steps += new_good_steps
-
-    with ThreadPoolExecutor() as pool: #max_workers=... pour choisir le nb max de threads
-        list(pool.map(worker, range(nb_trees)))
-
-    print(f"Score(difficulty = {i+1}) = {nb_success}/{nb_try}")
-    print("TIME : ", time.time() - t_start)
+for l in range(1, 36):
+    print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}")
+print(f"Score Total : sum(nb_success)/sum(nb_try)")
+print("TIME : ", time.time() - t_start)
 
 #with open("output_treefinement.dump", 'wb') as f:
 #    pickle.dump(good_proof_steps, f)
