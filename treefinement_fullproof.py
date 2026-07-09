@@ -1,3 +1,4 @@
+
 '''
 Contruit l'arbre de treefinement.
 '''
@@ -15,6 +16,7 @@ import random
 import asyncio
 from pathlib import Path
 import datetime
+import copy
 
 t_start = time.time()
 
@@ -23,13 +25,13 @@ results_dir = Path("results") / f"{date.strftime("%c")}"
 results_dir.mkdir(parents=True, exist_ok=True)
 
 #parameters
-arity = 3
+arity = 1
 beam_size = 4
-iter_max = 6
-nb_examples = 0
-max_sample_size = 0
+iter_max = 1
+nb_examples = 3
+max_sample_size = 3
 
-MAX_RANGE = 7 # pour ne pas itérer sur tout quand on veut juste tester, mettre à 10000 sinon
+MAX_RANGE = 20 # pour ne pas itérer sur tout quand on veut juste tester, mettre à 10000 sinon
 
 #alpha = 1
 #beta = 1
@@ -47,10 +49,10 @@ def penalty(nb_error, depth, consecutive_errors) :
 #model = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
 
 #model = "openai/gpt-4.1" # gros modèle
-model = "mistralai/mistral-small-2603"
+#model = "mistralai/mistral-small-2603"
 #model = "mistralai/Mistral-7B-Instruct-v0.3"
 #model = "deepseek/deepseek-v4-pro"
-#model = "deepseek/deepseek-v4-flash" # pas cher
+model = "deepseek/deepseek-v4-flash" # pas cher
 
 prefix = 'data/output/eval_tmp/'
 
@@ -91,82 +93,95 @@ chatbot = OpenAI(
 )
 '''
 
-def parse_tactics(text) :
+def parse_fullproof(text, i) :
     #print("PARSE_INPUT : ", text)
     ans = []
     buffer = ""
-    for i in range(len(text)) :
-        if (len(ans) == arity):
+    while i < len(text) - 4 :
+        if text[i:i+4] == 'Qed.' :
+            i += 4
             break
         buffer += text[i]
-        if text[i] == '.' or text[i] == '\n':
+        if text[i] == '.' :
             buffer = buffer.strip()
             if len(buffer) <= 1 :
+                i += 1
                 continue
             elif buffer[len(buffer) - 1] != '.':
                 buffer += '.'
             ans.append(buffer)
             buffer = ""
-    if not ans :
-        ans.append("idtac.")
-    return ans
+        i += 1
+    ans.append("Qed.")
+    return (ans, i)
 
+def parse_proposals(text) :
+    proofs = []
+    i = 0
+    while i < len(text) - 6 :
+        if text[i:i+6] == 'Proof.' :
+            proof, i = parse_fullproof(text, i+6)
+            proofs.append(["Proof."] + proof)
+        else :
+            i += 1
+    return proofs
 
 examples = []
-example_lemmas = set()
-def init_examples(client) :
-    while len(example_lemmas) <= nb_examples :
-        tactic_number = str(len(examples))
+seen_lemmas = set()
+def init_examples() :
+    pos = 0
+    while len(seen_lemmas) <= nb_examples :
+        tactic_number = str(pos)
+        pos += 1
         lemma = theorem[tactic_number]
-        example_lemmas.add(lemma)
-        file, pos = "./rocq/" + filepath[tactic_number], position[tactic_number]
-        line, char = pos["line"], pos["character"]
-        goal = client.goals(client.get_state_at_pos(file, line, char))[0].pp
-        examples.append({"theorem" : tactic_number, "goal" : goal, "tactic tried" : None, "error" : None, "tactic corrected" : tactic[tactic_number]})
+        if lemma in seen_lemmas :
+            continue
+        seen_lemmas.add(lemma)
+        examples.append({"theorem" : theorem[tactic_number], "goal" : statement[tactic_number], "proof corrected" : data[theorem[tactic_number]]["proof"], "errors" : [], "proof tried" : None})
 
-with Pytanque(mode=PytanqueMode.STDIO) as client:
-    init_examples(client)
+init_examples()
 
 good_proof_steps = examples
 
 # renvoie une tactique générée par llm, ainsi que la proof_state et l'éventuelle erreur qui survient
-def ask_llm(client, client_lock, tactic_number, prev_tactic, proof_st, error, feedback) :
+def ask_llm(client, client_lock, tactic_number, prev_tactic, proof_st, errors, feedback) :
 
     with client_lock :
         try :
-            goal = client.goals(proof_st)[0].pp
+            goals = client.goals(proof_st)
         except Exception as err :
-            return []
+            return [["Qed."]]
 
-    prompt = "Here is a goal in coq (mathematical components): \n\n"
-    prompt += goal
-    prompt += "\n\nWrite the next command you would use to solve it.\n"
+    prompt = "You have the following goals in your current context in coq (mathematical components): \n\n"
+    for g in goals : 
+        prompt += g.pp
+    prompt += "\n\nFinish the proof.\n"
+    prompt += "Your proof should start by 'Proof.' and end by 'Qed.' \n"
+    prompt += "Write each tactic of your proof on a separate line, in particular each line should end by a point.\n"
     prompt += f"Propose {arity} options.\n"
-    prompt += "Don't write anything else, and don't annotate your answer. Write eache proposal on a new line."
-    prompt += "Each of your proposal should end by a point.\n"
+    prompt += "Don't write anything else, and don't annotate your answer."
 
-    prompt += "\n\nTo help you, here are some examples of proof steps in mathcomp for a given goal statement:\n"
-    filtered_steps = [step for step in good_proof_steps if step["theorem"] != tactic_number]
-    for ex in random.sample(filtered_steps, min(max_sample_size, len(filtered_steps))):
-        prompt += "\nGoal : \n" + ex["goal"] + "\n"
-        if (ex["error"] is None) :
-            prompt += "\nNext tactic : " + ex["tactic corrected"] + "\n"
+    prompt += "\n\nTo help you, here are some examples of proofs in mathcomp for a given goal statement:\n"
+    for ex in random.sample(good_proof_steps, min(max_sample_size, len(good_proof_steps))):
+        prompt += "\nGoal : \n" + ex["goal"] + "\n\n"
+        if (ex["errors"] == []) :
+            prompt += "\nProof : " + ex["proof corrected"] + "\n"
         else :
-            prompt += "\nUnsuccessful tactic : " + ex["tactic tried"]
+            prompt += "\nUnsuccessful attempt : " + ex["proof tried"]
             prompt += "\nError : " + ex["error"]
-            prompt += "\nTactic corrected : " + ex["tactic corrected"] + "\n"
-    #prompt += "\nAnd some examples of good proof steps:\n" + str(current_good_steps)
-    if prev_tactic != None :
-        prompt += "\nThe last command you tried is :\n" + prev_tactic
-    if (error != None) :
-        prompt += "\nbut got the error : \n" + error + "\nCorrect your answer.\n"
+            prompt += "\nProof corrected : " + ex["proof corrected"] + "\n"
 
+
+
+    if prev_tactic != None :
+        prompt += "\nThe last proof you tried is :\n" + '\n'.join(prev_tactic)
+    if (errors != []) :
+        prompt += "\nbut got the errors : \n" + '\n'.join(errors) + "\n"
     if feedback :
-        prompt += "\nSo far, you got the following feedback (may have been truncated if longer than 50 lines) :\n"
+        print("feedback : ", feedback)
+        prompt += "\nAnd you got the following feedback (may have been truncated if longer than 50 lines) :\n"
         for level, message in feedback:
             prompt += f"Level {level}: {message}\n"
-    prompt += "\nYou can use commands like 'Check', 'Search', etc. if you need more information about the context.\n"
-    prompt += "\nAlthough you are asked to write the next tactic, it is not necessary to close the goal in a single step; small improvements are sufficient.\n" 
     #print("\nPROMPT : ", prompt)
 
 
@@ -181,12 +196,14 @@ def ask_llm(client, client_lock, tactic_number, prev_tactic, proof_st, error, fe
                 }
             },
         )
-        #print("ANSWER : ", response.output_text)
-        tacs = parse_tactics(response.output_text)
+        print("ANSWER : ", response.output_text)
+        proofs = parse_proposals(response.output_text)
+
+        #proofs = parse_proposals(input())
     except Exception as err:
         print("Error while querying llm : ", err)
-        tacs = ["idtac."]
-    return tacs
+        proofs = ["Qed."]
+    return proofs
 
 
 def make_tree(client, tactic_number_, client_lock) :
@@ -194,9 +211,8 @@ def make_tree(client, tactic_number_, client_lock) :
     tactic_number = str(tactic_number_)
     tree = [[]]
     parent = [0]
-    proof_state = []
-    tactic_tried = [None]
-    error = [None]
+    proof_tried = [None]
+    errors = [[]]
     depth = [0]
     nb_err = [0]
     nb_cons_err = [0]
@@ -204,8 +220,10 @@ def make_tree(client, tactic_number_, client_lock) :
 
     file, pos = "./rocq/" + filepath[tactic_number], position[tactic_number]
     line, char = pos["line"], pos["character"]
+
+
     with client_lock :
-        proof_state.append(client.get_state_at_pos(file, line, char))
+        proof_state = client.get_state_at_pos(file, line, char)
 
     it_lock = Lock()
     #goals_seen = set()
@@ -218,62 +236,56 @@ def make_tree(client, tactic_number_, client_lock) :
     def make_new_branches(node) : 
         ''' Generate arity children to node and returns generated steps if one tactic succeeded'''
         nonlocal tactic_number
-        #tac, new_state, new_error, new_feedback = ask_llm(tactic_tried[node], proof_state[node], error[node], previous_lemmas, node_feedback[node])
-        proof_st = proof_state[node]
-        new_feedback = node_feedback[node][:40] + proof_st.feedback[:50] #If there was an error, the last feedback is contained in the current proof state. I don't know how to fix it, it's not a major issue anyway
-        tacs = ask_llm(client, client_lock, tactic_number, tactic_tried[node], proof_st, error[node], new_feedback)
-        #print("TACS:", tacs)
-        for tac in tacs :
-            try :
-                with client_lock :
-                    new_state = client.run(proof_st, "Timeout 10 " + tac)
-                    new_error = None
-            except Exception as err :
-                #print("\nERROR : ", str(err))
-                new_state = proof_st
-                new_error = str(err)
+        proofs = ask_llm(client, client_lock, tactic_number, proof_tried[node], proof_state, errors[node], node_feedback[node])
+        print("PROOFS:", proofs)
+        for proof in proofs :
+            new_feedback = []
+            proof_st = copy.deepcopy(proof_state)
+            proof_errors = []
+            for tac in proof :
+                try :
+                    with client_lock :
+                        proof_st = client.run(proof_st, "Timeout 10 " + tac)
+                        print("Typeckeck")
+                        new_feedback += proof_st.feedback[:50]
+                        new_feedback = new_feedback[:50]
+                except Exception as err :
+                    print("did not typecheck, ERROR : ", tac + " : " + str(err))
+                    proof_errors.append(tac + " : " + str(err))
 
             with it_lock :
                 new_node = len(parent)
                 tree.append([])
                 tree[node].append(new_node)
                 parent.append(node)
-                proof_state.append(new_state)
-                tactic_tried.append(tac)
-                error.append(new_error)
+                proof_tried.append(proof)
+                errors.append(proof_errors)
                 depth.append(depth[node] + 1)
-                nb_err.append(nb_err[node] + 0 if error[new_node] is None else 1)
-                nb_cons_err.append(0 if error[new_node] is None else 1 + nb_cons_err[node])
                 node_feedback.append(new_feedback)
-                if proof_state[new_node].proof_finished :
+                if proof_st.proof_finished :
+                    print("end new_branch (solution found, extracting...)")
                     # Retrieve the correction steps
                     #print("parent : ", parent)
                     #print("tree : ", tree)
                     #print("Recuperation de l'arbre...")
                     steps = []
                     n = new_node
-                    while n != 0 :
-                        n_ = parent[n]
-                        while error[n_] != None :
-                            n_ = parent[n_]
-                        def dfs(u) :
-
-                            with client_lock :
-                                goal = client.goals(proof_state[u])[0].pp
-                            steps.append({"theorem" : theorem[tactic_number], "goal" : goal, "tactic tried" : tactic_tried[u], "error" : error[u], "tactic corrected" : tactic_tried[n]})
-
-                            for v in tree[u] :
-                                if (error[v] != None) :
-                                    dfs(v)
-                        dfs(n_)
-                        n = n_
+                    n_ = n
+                    while n_ != 0 :
+                        n_ = parent[n_]
+                        goals = []
+                        with client_lock :
+                            for g in client.goals(proof_state):
+                                goals.append(g.pp)
+                        steps.append({"theorem" : theorem[tactic_number], "goal" : goals, "tactic tried" : proof_tried[n_], "errors" : errors[n_], "tactic corrected" : proof_tried[n]})
                     return steps
                 else :
                     # la preuve n'est pas finie, donc il faudra explorer ce noeud plus tard
-                    pq.put((penalty(nb_err[new_node], depth[new_node], nb_cons_err[new_node]), new_node))
+                    pq.put((len(proof_errors), new_node))
                     #with client_lock :
                     #    goals_seen.add(client.goals(proof_state[new_node])[0].pp)
 
+        print("end new_branch (nothing)")
         return []
 
     iter_rem = iter_max
@@ -293,39 +305,8 @@ def make_tree(client, tactic_number_, client_lock) :
         with ThreadPoolExecutor() as pool:
             for steps in list(pool.map(make_beam, range(len(beam_nodes)))) :
                 if steps != [] :
-                    with it_lock :
-                        Tree = {
-                            "tree" : tree,
-                            "parent" : parent,
-                            "goals" : [[y.to_json() for y in client.goals(x)] for x in proof_state],
-                            "tactic_tried" : tactic_tried,
-                            "error" : error,
-                            "depth" : depth,
-                            "nb_err" : nb_err,
-                            "nb_cons_err" : nb_cons_err,
-                            "node_feedback" : node_feedback,
-                        }
-                        p = results_dir / f"tactic_{tactic_number_}.json"
-                        with open(p, "w") as f: 
-                            json.dump(Tree, f, indent=2)
                     return steps
 
-
-    with it_lock :
-        Tree = {
-            "tree" : tree,
-            "parent" : parent,
-            "goals" : [[y.to_json() for y in client.goals(x)] for x in proof_state],
-            "tactic_tried" : tactic_tried,
-            "error" : error,
-            "depth" : depth,
-            "nb_err" : nb_err,
-            "nb_cons_err" : nb_cons_err,
-            "node_feedback" : node_feedback,
-        }
-        p = results_dir / f"tactic_{tactic_number_}.json"
-        with open(p, "w") as f: 
-            json.dump(Tree, f, indent=2)
 
     return []
 
@@ -338,7 +319,7 @@ tactics = []
 N = min(MAX_RANGE, len(position))
 for i in range(N) :
     k = str(i)
-    if (theorem[k] in example_lemmas):
+    if (theorem[k] in seen_lemmas):
         continue
     l = 0
     while next_tactic[k] != None :
@@ -347,6 +328,7 @@ for i in range(N) :
     tactics.append((l, i))
 
 tactics.sort()
+print("tactics : ", tactics)
 
 steps_lock = Lock()
 def worker(j) :
@@ -364,7 +346,7 @@ def worker(j) :
             print(i, f"[difficulty = {l+1}] -- finished(failure) --> {nb_success[l]}/{nb_try[l]}")
         good_proof_steps += new_good_steps
 
-with ThreadPoolExecutor() as pool: #max_workers=... pour choisir le nb max de threads
+with ThreadPoolExecutor(max_workers=1) as pool: #max_workers=... pour choisir le nb max de threads
     list(pool.map(worker, range(len(tactics))))
 
 for l in range(42):
