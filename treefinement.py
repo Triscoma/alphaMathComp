@@ -133,7 +133,10 @@ good_proof_steps = examples
 def ask_llm(client, client_lock, tactic_number, prev_tactic, proof_st, error, feedback) :
 
     with client_lock :
-        goal = client.goals(proof_st)[0].pp
+        try :
+            goal = client.goals(proof_st)[0].pp
+        except Exception as err :
+            return []
 
     prompt = "Here is a goal in coq (mathematical components): \n\n"
     prompt += goal
@@ -162,6 +165,7 @@ def ask_llm(client, client_lock, tactic_number, prev_tactic, proof_st, error, fe
     for level, message in feedback:
         prompt += f"Level {level}: {message}\n"
     prompt += "\nYou can use commands like 'Check', 'Search', etc. if you need more information about the context.\n"
+    prompt += "\nAlthough you are asked to write the next tactic, it is not necessary to close the goal in a single step; small improvements are sufficient.\n" 
     #print("\nPROMPT : ", prompt)
 
 
@@ -182,8 +186,6 @@ def ask_llm(client, client_lock, tactic_number, prev_tactic, proof_st, error, fe
         print("Error while querying llm : ", err)
         tacs = ["idtac."]
     return tacs
-
-
 
 
 def make_tree(client, tactic_number_, client_lock) :
@@ -208,7 +210,7 @@ def make_tree(client, tactic_number_, client_lock) :
     #goals_seen = set()
 
 
-    pq = PriorityQueue() # couples of (penalty, node_id)
+    pq = PriorityQueue() # pairs of (penalty, node_id)
     pq.put((0, 0))
 
 
@@ -219,7 +221,7 @@ def make_tree(client, tactic_number_, client_lock) :
         proof_st = proof_state[node]
         new_feedback = node_feedback[node][:40] + proof_st.feedback[:50] #If there was an error, the last feedback is contained in the current proof state. I don't know how to fix it, it's not a major issue anyway
         tacs = ask_llm(client, client_lock, tactic_number, tactic_tried[node], proof_st, error[node], new_feedback)
-        #print("TACS :", tacs)
+        #print("TACS:", tacs)
         for tac in tacs :
             try :
                 with client_lock :
@@ -273,8 +275,8 @@ def make_tree(client, tactic_number_, client_lock) :
 
         return []
 
-
-    for it in range(int(iter_max / beam_size)) :
+    iter_rem = iter_max
+    while iter_rem :
         #print("it = ", it)
         beam_nodes = []
         for _ in range(beam_size) :
@@ -282,6 +284,7 @@ def make_tree(client, tactic_number_, client_lock) :
                 break
             pen, node = pq.get()
             beam_nodes.append(node)
+        iter_rem -= len(beam_nodes)
 
         def make_beam(it_beam) :
             return make_new_branches(beam_nodes[it_beam]) 

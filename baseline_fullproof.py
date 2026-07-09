@@ -191,7 +191,6 @@ for i in range(len(position)) :
     k = str(i)
     if (theorem[k] in seen_lemmas):
         continue
-    seen_lemmas.add(theorem[k])
     l = 0
     while next_tactic[k] != None :
         k = str(next_tactic[k])
@@ -218,6 +217,6 @@ with Pytanque(mode=PytanqueMode.STDIO) as client :
         list(pool.map(worker, range(len(tactics))))
 
 for l in range(42):
-    print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}, average successful proof length = {0 if nb_success[l] == 0 else size/nb_success[l]}")
+    print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}, average successful proof length = {0 if nb_success[l] == 0 else size[l]/nb_success[l]}")
 print(f"Total Score : {sum(nb_success)}/{sum(nb_try)}")
 print("TIME : ", time.time() - t_start)
