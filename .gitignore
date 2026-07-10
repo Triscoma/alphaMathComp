@@ -11,3 +11,4 @@ extra_code
 results
 *.sif
 .venv
+save_results

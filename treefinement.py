@@ -18,7 +18,8 @@ from pathlib import Path
 import datetime
 
 date = datetime.datetime.now()
-results_dir = Path("results") / f"{date.strftime("%c")}"
+jobid = os.environ.get("SLURM_JOB_ID", "local")
+results_dir = Path("results") / f"{date.strftime('%Y-%m-%d-%H-%M-%S')}-{jobid}"
 results_dir.mkdir(parents=True, exist_ok=True)
 
 parser = argparse.ArgumentParser(description="Construit l'arbre de treefinement.")
@@ -34,6 +35,12 @@ parser.add_argument(
     default=20,
     help="nb max d'exemples de few-shot inclus dans le prompt",
 )
+parser.add_argument(
+    "--max-retries",
+    type=int,
+    default=3,
+    help="nb max de hard timeouts sur pet toleres avant d'abandonner un theoreme",
+)
 args = parser.parse_args()
 
 # parameters
@@ -43,6 +50,8 @@ iter_max = 15
 nb_examples = 5
 max_sample_size = args.max_sample_size
 max_workers = 65  # nb de theoremes traites en parallele (threads I/O-bound, la limite est le serveur de modele)
+tactic_hard_timeout = 20  # secondes ; garde-fou si "Timeout 10" est ignore par la tactique
+max_retries = args.max_retries  # nb max de hard timeouts avant d'abandonner un theoreme
 
 MAX_RANGE = 1000000  # pour ne pas itérer sur tout quand on veut juste tester
 
@@ -54,6 +63,25 @@ beta = -0.1
 
 print("PROGRAM IS STARTING")
 t_start = time.time()
+
+
+class TheoremAborted(Exception):
+    """Levee quand un theoreme est abandonne apres trop de hard timeouts sur le client pet."""
+
+
+def run_with_hard_timeout(fn, timeout):
+    """Execute fn() dans un thread a part et attend au plus `timeout` secondes.
+
+    Si ca ne revient pas a temps, on leve TimeoutError : le thread abandonne
+    n'est pas tue (Python ne le permet pas) mais il finira par se terminer de
+    lui-meme des que le process pet concerne aura ete tue par l'appelant.
+    """
+    executor = ThreadPoolExecutor(max_workers=1)
+    try:
+        future = executor.submit(fn)
+        return future.result(timeout=timeout)
+    finally:
+        executor.shutdown(wait=False)
 
 
 def penalty(nb_error, depth, consecutive_errors):
@@ -183,7 +211,7 @@ def ask_llm(
 
     prompt = "Here is a goal in coq (mathematical components): \n\n"
     prompt += goal
-    prompt += "\n\nWrite the next command you would use to solve it.\n"
+    prompt += "\n\nWrite the next command you would use to find a proof of it.\n"
     prompt += f"Propose up to {arity} options.\n"
     prompt += "Don't write anything else, and don't annotate your answer. Write eache proposal on a new line."
     prompt += "Each of your proposal should end by a point.\n"
@@ -210,6 +238,7 @@ def ask_llm(
     for level, message in feedback:
         prompt += f"Level {level}: {message}\n"
     prompt += "\nYou can use commands like 'Check', 'Search', etc. if you need more information about the context.\n"
+    prompt += "\nAlthough you are asked to write the next tactic, it is not necessary to close the goal in a single step; small improvements are sufficient. That means that you don't have to start your tactics with `by` unless you think it can close the goal.\n"
     # print("\nPROMPT : ", prompt)
 
     try:
@@ -241,6 +270,7 @@ def make_tree(client, tactic_number_, client_lock, iter_max):
     valid_depth = [0]  # nb de tactiques valides (sans erreur) depuis la racine
     max_valid_depth = [0]  # plus longue branche valide explorée
     max_valid_depth_total = [0]  # profondeur totale (avec erreurs) de cette branche
+    retries_used = [0]  # nb de hard timeouts rencontres pour ce theoreme
 
     file, pos = "./rocq/" + filepath[tactic_number], position[tactic_number]
     line, char = pos["line"], pos["character"]
@@ -253,157 +283,234 @@ def make_tree(client, tactic_number_, client_lock, iter_max):
     pq = PriorityQueue()  # couples of (penalty, node_id)
     pq.put((0, 0))
 
+    def rebuild_client():
+        """Reconnecte un nouveau client pet et rejoue toutes les tactiques
+        valides de l'arbre pour reconstruire les proof_state existants (les
+        noeuds en erreur se contentent de recopier l'etat de leur parent,
+        comme au moment de leur creation)."""
+        new_client = Pytanque(mode=PytanqueMode.STDIO)
+        new_client.connect()
+        proof_state[0] = new_client.get_state_at_pos(file, line, char)
+        n = 1
+        while n < len(parent):
+            if error[n] is not None:
+                proof_state[n] = proof_state[parent[n]]
+            else:
+                proof_state[n] = new_client.run(
+                    proof_state[parent[n]], "Timeout 10 " + tactic_tried[n]
+                )
+            n += 1
+        return new_client
+
     def make_new_branches(node):
         """Generate arity children to node and returns generated steps if one tactic succeeded"""
-        nonlocal tactic_number
-        # tac, new_state, new_error, new_feedback = ask_llm(tactic_tried[node], proof_state[node], error[node], previous_lemmas, node_feedback[node])
-        proof_st = proof_state[node]
-        new_feedback = (
-            node_feedback[node][:40] + proof_st.feedback[:50]
-        )  # If there was an error, the last feedback is contained in the current proof state. I don't know how to fix it, it's not a major issue anyway
-        tacs = ask_llm(
-            client,
-            client_lock,
-            tactic_number,
-            tactic_tried[node],
-            proof_st,
-            error[node],
-            new_feedback,
-        )
-        print(f"{GREY}[theorem {tactic_number_}] tactics proposed : {tacs}{RESET}")
-        for tac in tacs:
-            try:
-                with client_lock:
-                    new_state = client.run(proof_st, "Timeout 10 " + tac)
-                    new_error = None
-            except Exception as err:
-                # print("\nERROR : ", str(err))
-                new_state = proof_st
-                new_error = str(err)
-
-            with it_lock:
-                new_node = len(parent)
-                tree.append([])
-                tree[node].append(new_node)
-                parent.append(node)
-                proof_state.append(new_state)
-                tactic_tried.append(tac)
-                error.append(new_error)
-                depth.append(depth[node] + 1)
-                nb_err.append(nb_err[node] + 0 if error[new_node] is None else 1)
-                nb_cons_err.append(
-                    0 if error[new_node] is None else 1 + nb_cons_err[node]
-                )
-                node_feedback.append(new_feedback)
-                valid_depth.append(valid_depth[node] + (1 if new_error is None else 0))
-                if valid_depth[new_node] > max_valid_depth[0]:
-                    max_valid_depth[0] = valid_depth[new_node]
-                    max_valid_depth_total[0] = depth[new_node]
-                if proof_state[new_node].proof_finished:
-                    # Retrieve the correction steps
-                    # print("parent : ", parent)
-                    # print("tree : ", tree)
-                    # print("Recuperation de l'arbre...")
-                    steps = []
-                    n = new_node
-                    while n != 0:
-                        n_ = parent[n]
-                        while error[n_] != None:
-                            n_ = parent[n_]
-
-                        def dfs(u):
-
-                            with client_lock:
-                                goal = client.goals(proof_state[u])[0].pp
-                            steps.append(
-                                {
-                                    "theorem": theorem[tactic_number],
-                                    "goal": goal,
-                                    "tactic tried": tactic_tried[u],
-                                    "error": error[u],
-                                    "tactic corrected": tactic_tried[n],
-                                }
-                            )
-
-                            for v in tree[u]:
-                                if error[v] != None:
-                                    dfs(v)
-
-                        dfs(n_)
-                        n = n_
-                    return steps, valid_depth[new_node], depth[new_node]
-                elif client.goals(new_state):
-                    # la preuve n'est pas finie, donc il faudra explorer ce noeud plus tard
-                    pq.put(
-                        (
-                            penalty(
-                                nb_err[new_node], depth[new_node], nb_cons_err[new_node]
-                            ),
-                            new_node,
-                        )
-                    )
-                    # with client_lock :
-                    #    goals_seen.add(client.goals(proof_state[new_node])[0].pp)
-
-        return [], None, None
-
-    nb_iterations = 0
-    while nb_iterations < iter_max:
-        beam_nodes = []
-        for i in range(min(beam_size, iter_max - nb_iterations)):
-            if pq.empty():
-                break
-            print(
-                f"{GREY}[theorem {tactic_number_}] iteration {nb_iterations + i + 1}/{iter_max} "
-                f"({iter_max - nb_iterations - i - 1} left){RESET}"
+        nonlocal tactic_number, client
+        try:
+            proof_st = proof_state[node]
+            new_feedback = (
+                node_feedback[node][:40] + proof_st.feedback[:50]
+            )  # If there was an error, the last feedback is contained in the current proof state. I don't know how to fix it, it's not a major issue anyway
+            tacs = ask_llm(
+                client,
+                client_lock,
+                tactic_number,
+                tactic_tried[node],
+                proof_st,
+                error[node],
+                new_feedback,
             )
-            pen, node = pq.get()
-            beam_nodes.append(node)
+            print(f"{GREY}[theorem {tactic_number_}] tactics proposed : {tacs}{RESET}")
+            for tac in tacs:
+                # proof_state[node] peut avoir change si un rebuild a eu lieu
+                # depuis le debut de cette boucle (a cause d'une tactique
+                # precedente de ce meme node qui aurait hard-timeout)
+                proof_st = proof_state[node]
+                with client_lock:
+                    try:
+                        new_state = run_with_hard_timeout(
+                            lambda: client.run(proof_st, "Timeout 10 " + tac),
+                            tactic_hard_timeout,
+                        )
+                        new_error = None
+                    except TimeoutError:
+                        retries_used[0] += 1
+                        print(
+                            f"{GREY}[theorem {tactic_number_}] HARD TIMEOUT on tactic {tac!r} "
+                            f"(retry {retries_used[0]}/{max_retries}) -- killing pet client{RESET}"
+                        )
+                        client.process.kill()
+                        if retries_used[0] > max_retries:
+                            raise TheoremAborted(
+                                f"exceeded {max_retries} hard-timeout retries (stuck on: {tac!r})"
+                            )
+                        # On reconstruit tout de suite, toujours sous client_lock,
+                        # pour que les threads freres bloques sur ce verrou voient
+                        # directement le nouveau client une fois qu'ils l'obtiennent.
+                        rebuild_timeout = tactic_hard_timeout * max(1, len(parent))
+                        try:
+                            client = run_with_hard_timeout(
+                                rebuild_client, rebuild_timeout
+                            )
+                        except TimeoutError:
+                            raise TheoremAborted(
+                                "rebuilding the pet client after a hard timeout also hard-timed-out"
+                            )
+                        new_state = proof_state[node]  # rafraichi apres reconstruction
+                        new_error = (
+                            f"hard timeout after {tactic_hard_timeout}s "
+                            f"(tactic likely stuck): {tac}"
+                        )
+                    except Exception as err:
+                        # print("\nERROR : ", str(err))
+                        new_state = proof_st
+                        new_error = str(err)
 
-        def make_beam(it_beam):
-            return make_new_branches(beam_nodes[it_beam])
+                with it_lock:
+                    new_node = len(parent)
+                    tree.append([])
+                    tree[node].append(new_node)
+                    parent.append(node)
+                    proof_state.append(new_state)
+                    tactic_tried.append(tac)
+                    error.append(new_error)
+                    depth.append(depth[node] + 1)
+                    nb_err.append(nb_err[node] + 0 if error[new_node] is None else 1)
+                    nb_cons_err.append(
+                        0 if error[new_node] is None else 1 + nb_cons_err[node]
+                    )
+                    node_feedback.append(new_feedback)
+                    valid_depth.append(
+                        valid_depth[node] + (1 if new_error is None else 0)
+                    )
+                    if valid_depth[new_node] > max_valid_depth[0]:
+                        max_valid_depth[0] = valid_depth[new_node]
+                        max_valid_depth_total[0] = depth[new_node]
+                    if proof_state[new_node].proof_finished:
+                        # Retrieve the correction steps
+                        # print("parent : ", parent)
+                        # print("tree : ", tree)
+                        # print("Recuperation de l'arbre...")
+                        steps = []
+                        n = new_node
+                        while n != 0:
+                            n_ = parent[n]
+                            while error[n_] != None:
+                                n_ = parent[n_]
 
-        with ThreadPoolExecutor() as pool:
-            for steps, branch_size, total_depth in list(
-                pool.map(make_beam, range(len(beam_nodes)))
-            ):
-                if steps != []:
-                    with it_lock:
-                        Tree = {
-                            "tree": tree,
-                            "parent": parent,
-                            "proof_state": [x.to_json() for x in proof_state],
-                            "tactic_tried": tactic_tried,
-                            "error": error,
-                            "depth": depth,
-                            "nb_err": nb_err,
-                            "nb_const_err": nb_cons_err,
-                            "node_feedback": node_feedback,
-                        }
-                        p = results_dir / f"tactic_{tactic_number_}.json"
-                        with open(p, "w") as f:
-                            json.dump(Tree, f, indent=2)
-                    return steps, branch_size, total_depth
+                            def dfs(u):
 
-        nb_iterations += len(beam_nodes)
+                                with client_lock:
+                                    goal = client.goals(proof_state[u])[0].pp
+                                steps.append(
+                                    {
+                                        "theorem": theorem[tactic_number],
+                                        "goal": goal,
+                                        "tactic tried": tactic_tried[u],
+                                        "error": error[u],
+                                        "tactic corrected": tactic_tried[n],
+                                    }
+                                )
 
-    with it_lock:
-        Tree = {
-            "tree": tree,
-            "parent": parent,
-            "proof_state": [x.to_json() for x in proof_state],
-            "tactic_tried": tactic_tried,
-            "error": error,
-            "depth": depth,
-            "nb_err": nb_err,
-            "nb_const_err": nb_cons_err,
-            "node_feedback": node_feedback,
-        }
-        p = results_dir / f"tactic_{tactic_number_}.json"
-        with open(p, "w") as f:
-            json.dump(Tree, f, indent=2)
+                                for v in tree[u]:
+                                    if error[v] != None:
+                                        dfs(v)
 
-    return [], max_valid_depth[0], max_valid_depth_total[0]
+                            dfs(n_)
+                            n = n_
+                        return steps, valid_depth[new_node], depth[new_node]
+
+                    try:
+                        goals = client.goals(new_state)
+                        if goals:
+                            # la preuve n'est pas finie, donc il faudra explorer ce noeud plus tard
+                            pq.put(
+                                (
+                                    penalty(
+                                        nb_err[new_node],
+                                        depth[new_node],
+                                        nb_cons_err[new_node],
+                                    ),
+                                    new_node,
+                                )
+                            )
+                            # with client_lock :
+                            #    goals_seen.add(client.goals(proof_state[new_node])[0].pp)
+                    except:
+                        pass
+
+            return [], None, None
+        except TheoremAborted:
+            raise
+        except Exception as err:
+            # Un appel client non protege (ask_llm, dfs, ...) a plante : le
+            # plus souvent parce qu'un autre thread frere a deja tue/abandonne
+            # le client pet partage pour ce theoreme. On abandonne proprement
+            # plutot que de laisser une exception brute remonter et faire
+            # planter tout le pool de threads.
+            raise TheoremAborted(f"unexpected pet client failure: {err}") from err
+
+    try:
+        nb_iterations = 0
+        while nb_iterations < iter_max:
+            beam_nodes = []
+            for i in range(min(beam_size, iter_max - nb_iterations)):
+                if pq.empty():
+                    break
+                print(
+                    f"{GREY}[theorem {tactic_number_}] iteration {nb_iterations + i + 1}/{iter_max} "
+                    f"({iter_max - nb_iterations - i - 1} left){RESET}"
+                )
+                pen, node = pq.get()
+                beam_nodes.append(node)
+
+            def make_beam(it_beam):
+                return make_new_branches(beam_nodes[it_beam])
+
+            with ThreadPoolExecutor() as pool:
+                for steps, branch_size, total_depth in list(
+                    pool.map(make_beam, range(len(beam_nodes)))
+                ):
+                    if steps != []:
+                        with it_lock:
+                            Tree = {
+                                "tree": tree,
+                                "parent": parent,
+                                "proof_state": [x.to_json() for x in proof_state],
+                                "tactic_tried": tactic_tried,
+                                "error": error,
+                                "depth": depth,
+                                "nb_err": nb_err,
+                                "nb_const_err": nb_cons_err,
+                                "node_feedback": node_feedback,
+                            }
+                            p = results_dir / f"tactic_{tactic_number_}.json"
+                            with open(p, "w") as f:
+                                json.dump(Tree, f, indent=2)
+                        return steps, branch_size, total_depth
+
+            nb_iterations += len(beam_nodes)
+
+        with it_lock:
+            Tree = {
+                "tree": tree,
+                "parent": parent,
+                "proof_state": [x.to_json() for x in proof_state],
+                "tactic_tried": tactic_tried,
+                "error": error,
+                "depth": depth,
+                "nb_err": nb_err,
+                "nb_const_err": nb_cons_err,
+                "node_feedback": node_feedback,
+            }
+            p = results_dir / f"tactic_{tactic_number_}.json"
+            with open(p, "w") as f:
+                json.dump(Tree, f, indent=2)
+
+        return [], max_valid_depth[0], max_valid_depth_total[0]
+    finally:
+        # `client` peut avoir ete remplace par rebuild_client() en cours de
+        # route : on ferme systematiquement le client courant.
+        client.close()
 
 
 nb_try = [0 for i in range(42)]
@@ -421,7 +528,7 @@ for i in range(len(position)):
         l += 1
     tactics.append((l, i))
 
-tactics.sort()
+random.shuffle(tactics)
 
 steps_lock = Lock()
 
@@ -429,11 +536,16 @@ steps_lock = Lock()
 def worker(j):
     global nb_try, nb_success, good_proof_steps, nb_theorems_done
     l, i = tactics[j]
-    with Pytanque(mode=PytanqueMode.STDIO) as client:
-        client_lock = Lock()
+    client = Pytanque(mode=PytanqueMode.STDIO)
+    client.connect()
+    client_lock = Lock()
+    try:
         new_good_steps, branch_size, total_depth = make_tree(
             client, i, client_lock, iter_max
         )
+    except TheoremAborted as err:
+        print(f"{GREY}[theorem {i}] ABORTED -- {err}{RESET}")
+        new_good_steps, branch_size, total_depth = [], None, None
     with steps_lock:
         nb_try[l] += 1
         nb_theorems_done += 1
@@ -460,8 +572,8 @@ with ThreadPoolExecutor(max_workers=max_workers) as pool:
     list(pool.map(worker, range(len(tactics))))
 
 for l in range(42):
-        print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}")
-print(f"Score Total : sum(nb_success)/sum(nb_try)")
+    print(f"Score(difficulty = {l+1}) = {nb_success[l]}/{nb_try[l]}")
+print(f"Score Total : {sum(nb_success)}/{sum(nb_try)}")
 print("TIME : ", time.time() - t_start)
 
 # with open("output_treefinement.dump", 'wb') as f:
