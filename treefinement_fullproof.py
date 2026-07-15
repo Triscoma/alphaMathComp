@@ -36,8 +36,10 @@ MAX_RANGE = 20 # pour ne pas itérer sur tout quand on veut juste tester, mettre
 #alpha = 1
 #beta = 1
 
+""" --> the penalty used here is len(proof_errors)/len(proof)
 def penalty(nb_error, depth, consecutive_errors) :
     return nb_error / depth
+"""
 
 '''
 def penalty(nb_error, depth, consecutive_errors) :
@@ -281,7 +283,7 @@ def make_tree(client, tactic_number_, client_lock) :
                     return steps
                 else :
                     # la preuve n'est pas finie, donc il faudra explorer ce noeud plus tard
-                    pq.put((len(proof_errors), new_node))
+                    pq.put((len(proof_errors)/len(proof), new_node))
                     #with client_lock :
                     #    goals_seen.add(client.goals(proof_state[new_node])[0].pp)
 
