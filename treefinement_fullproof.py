@@ -1,8 +1,3 @@
-
-'''
-Contruit l'arbre de treefinement.
-'''
-
 import os
 import json
 import re
@@ -31,10 +26,7 @@ iter_max = 1
 nb_examples = 3
 max_sample_size = 3
 
-MAX_RANGE = 20 # pour ne pas itérer sur tout quand on veut juste tester, mettre à 10000 sinon
-
-#alpha = 1
-#beta = 1
+MAX_RANGE = 20 # set it to 10'000
 
 """ --> the penalty used here is len(proof_errors)/len(proof)
 def penalty(nb_error, depth, consecutive_errors) :
@@ -46,7 +38,7 @@ def penalty(nb_error, depth, consecutive_errors) :
     return consecutive_errors
 '''
 
-#modèles de test : 
+# test models : 
 #model = "nvidia/nemotron-3-nano-30b-a3b:free"
 #model = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"
 
@@ -54,7 +46,7 @@ def penalty(nb_error, depth, consecutive_errors) :
 #model = "mistralai/mistral-small-2603"
 #model = "mistralai/Mistral-7B-Instruct-v0.3"
 #model = "deepseek/deepseek-v4-pro"
-model = "deepseek/deepseek-v4-flash" # pas cher
+#model = "deepseek/deepseek-v4-flash" # pas cher
 
 prefix = 'data/output/eval_tmp/'
 
@@ -145,7 +137,7 @@ init_examples()
 
 good_proof_steps = examples
 
-# renvoie une tactique générée par llm, ainsi que la proof_state et l'éventuelle erreur qui survient
+# returns an LLM-generated tactic, along with the proof state and any error that occurs
 def ask_llm(client, client_lock, tactic_number, prev_tactic, proof_st, errors, feedback) :
 
     with client_lock :
@@ -228,7 +220,6 @@ def make_tree(client, tactic_number_, client_lock) :
         proof_state = client.get_state_at_pos(file, line, char)
 
     it_lock = Lock()
-    #goals_seen = set()
 
 
     pq = PriorityQueue() # pairs of (penalty, node_id)
@@ -267,9 +258,6 @@ def make_tree(client, tactic_number_, client_lock) :
                 if proof_st.proof_finished :
                     print("end new_branch (solution found, extracting...)")
                     # Retrieve the correction steps
-                    #print("parent : ", parent)
-                    #print("tree : ", tree)
-                    #print("Recuperation de l'arbre...")
                     steps = []
                     n = new_node
                     n_ = n
@@ -282,10 +270,8 @@ def make_tree(client, tactic_number_, client_lock) :
                         steps.append({"theorem" : theorem[tactic_number], "goal" : goals, "tactic tried" : proof_tried[n_], "errors" : errors[n_], "tactic corrected" : proof_tried[n]})
                     return steps
                 else :
-                    # la preuve n'est pas finie, donc il faudra explorer ce noeud plus tard
+                    # The proof is not complete, so this node will need to be explored later.
                     pq.put((len(proof_errors)/len(proof), new_node))
-                    #with client_lock :
-                    #    goals_seen.add(client.goals(proof_state[new_node])[0].pp)
 
         print("end new_branch (nothing)")
         return []
