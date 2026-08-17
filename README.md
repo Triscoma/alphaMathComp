@@ -10,7 +10,7 @@ This is a proposal to adapt AlphaVerus' Treefinement method to this framework
   - (for the given mathcomp examples) : mathcomp 2.4.0
 
 ### Usage : 
-  - Make data files from your rocq files with goal2tac (data/output.json with dataset/format_project.py then data/output/train_tmp and data/output/eval_tmp with dataset/create.py)
+  - (only if you want to use a dataset other than ours) Make data files from the rocq files of your dataset with goal2tac (data/output.json with dataset/format_project.py then data/output/train_tmp and data/output/eval_tmp with dataset/create.py)
   - If you want to run the model on OpenRouter :
     - Make a json confidential.json containing your api key in the field "API_KEY".
   - Else :
