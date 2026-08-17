@@ -16,9 +16,10 @@ This is a proposal to adapt AlphaVerus' Treefinement method to this framework
   - Else :
     - In treefinement.py, change the chatbot parameters to make it run the way you want
   - Choose the desired model and parameters in the source of treefinement.py (or treefinement_fullproof.py)
-    	- Main parameters are :
-  		  - arity (number of leaves created when exploring a node)
-        - iter_max (number of explored nodes)
-        - nb_examples (number of examples used to make the initial dataset)
-        - max_sample_size (maximum number of examples sampled from the previous good steps and corrections made by the program at each iteration)
+    
+    Main parameters are :
+      - arity (number of leaves created when exploring a node)
+      - iter_max (maximum number of nodes explored to prove a statement)
+      - nb_examples (number of examples used to make the initial dataset)
+      - max_sample_size (maximum number of examples sampled from the previous good steps and corrections made by the program during previous iterations)
   - Run the script with python3 -m treefinement (or python3 -m treefinement_fullproof)
